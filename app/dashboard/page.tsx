@@ -17,6 +17,7 @@ import {
   Settings
 } from "lucide-react";
 import api from "@/services/api";
+import DashboardHeader from "./components/DashboardHeader";
 import RatingModal from "./components/RatingModal";
 import RequestModal from "./components/RequestModal";
 import OfferModal from "./components/OfferModal";
@@ -27,6 +28,12 @@ interface Category { id: string; name: string; createdAt: string }
 interface User { id: string; name: string; email: string }
 interface Offer { id: string; title: string; description: string; user: User; ratings: any[]; active: boolean; createdAt: string }
 interface ServiceRequest { id: string; description: string; user: User; active: boolean; createdAt: string }
+interface SearchResult {
+  id: string;
+  name: string;
+  email?: string;
+  type: "user" | "service";
+}
 
 const ITEMS_PER_PAGE = 4;
 const SEEKERS_PER_PAGE = 3;
@@ -38,6 +45,9 @@ export default function Dashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [filteredCategories, setFilteredCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [categoryPage, setCategoryPage] = useState(1);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -116,6 +126,44 @@ export default function Dashboard() {
       setSeekersByCategory([]);
     } finally {
       setSeekersLoading(false);
+    }
+  };
+
+  // ✅ FIXED SEARCH - Only searches USERS and hides dropdown when cleared
+  const handleUnifiedSearch = async (query: string) => {
+    setSearchQuery(query);
+    
+    // ✅ Clear results immediately when input is empty
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      
+      // Search for users ONLY
+      const usersRes = await api.get(`/users`, {
+        params: { search: query, page: 1, limit: 10 }
+      }).catch(() => ({ data: { users: [] } }));
+
+      const users = (usersRes.data.users || []).map((user: any) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        type: "user" as const
+      }));
+
+      setSearchResults(users);
+      // ✅ Only show dropdown if there are actual results
+      setShowSearchResults(users.length > 0);
+    } catch (err) {
+      console.error("Error searching:", err);
+      setSearchResults([]);
+      setShowSearchResults(false);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
@@ -245,70 +293,14 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#f5f6fb] to-white">
       {/* HEADER */}
-      <nav className="bg-white shadow-lg sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <div className="flex flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-14 h-14 bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] rounded-xl flex items-center justify-center text-white font-black text-4xl shadow-md transform -skew-x-6">
-                <span className="transform skew-x-6">S</span>
-              </div>
-              <div className="text-4xl font-black tracking-tight">
-                <span className="text-[#5AC8FA]">Skill</span>
-                <span className="text-[#204585]">-Link</span>
-              </div>
-            </div>
-
-            <div className="flex-1 mx-8 max-w-lg bg-gray-50 rounded-full px-8 py-4 items-center shadow-md border-2 border-gray-300 hover:border-[#5AC8FA] transition-all flex">
-              <Search className="w-7 h-7 text-[#5AC8FA] mr-4" />
-              <input
-                type="text"
-                placeholder="Search Any Services"
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="flex-1 outline-none text-lg text-[#3d3f56] placeholder:text-[#7CA0D8] font-semibold bg-transparent"
-              />
-            </div>
-
-            <div className="bg-gradient-to-r from-[#A4C2F4] to-[#7CA0D8] shadow-lg rounded-full px-8 py-4 flex items-center gap-8 whitespace-nowrap">
-              <Link
-                href="/dashboard"
-                className="text-lg font-bold text-white hover:text-[#f0f1f7] transition-all flex items-center gap-2"
-              >
-                <Home className="w-6 h-6" />
-                Home
-              </Link>
-              <Link
-                href="/dashboard/about"
-                className="text-lg font-bold text-white hover:text-[#f0f1f7] transition-all flex items-center gap-2"
-              >
-                <Info className="w-6 h-6" />
-                About
-              </Link>
-              <Link
-                href="/dashboard/messages"
-                className="text-lg font-bold text-white hover:text-[#f0f1f7] transition-all flex items-center gap-2"
-              >
-                <MessageCircle className="w-6 h-6" />
-                Messages
-              </Link>
-              <Link
-                href="/dashboard/profile"
-                className="text-lg font-bold text-white hover:text-[#f0f1f7] transition-all flex items-center gap-2"
-              >
-                <User className="w-6 h-6" />
-                Profile
-              </Link>
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="text-lg font-bold text-white hover:text-[#f0f1f7] transition-all flex items-center gap-2"
-              >
-                <Settings className="w-6 h-6" />
-                Settings
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <DashboardHeader 
+        onSettingsClick={() => setShowSettingsModal(true)}
+        currentPage="home"
+        onSearch={handleUnifiedSearch}
+        searchResults={searchResults}
+        showSearchResults={showSearchResults}
+        searchType="users"
+      />
 
       <div className="h-6"></div>
 
