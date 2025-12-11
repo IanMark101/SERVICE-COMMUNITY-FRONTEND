@@ -172,8 +172,10 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "https://skill-link-production.up.railway.app/api/auth/google";
-  };
+  // Use the environment variable. Fallback to localhost only if the variable is missing.
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  window.location.href = `${API_URL}/api/auth/google`;
+};
 
   return (
     <div className={`min-h-screen flex items-center justify-center relative overflow-hidden py-4 ${
