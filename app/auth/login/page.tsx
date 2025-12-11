@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogIn, ArrowLeft } from "lucide-react";
 import api from "@/services/api";
+import { usePresence } from "@/app/context/PresenceContext";
+import { useDarkMode } from "@/app/context/DarkModeContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -11,6 +13,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { startHeartbeat, setPresence } = usePresence();
+  const { isDark } = useDarkMode();
 
   // Capture token from Google OAuth callback
   useEffect(() => {
@@ -18,10 +22,98 @@ export default function LoginPage() {
     const token = params.get("token");
     
     if (token) {
+      console.log("🔐 OAuth token received, storing and initializing...");
       localStorage.setItem("userToken", token);
-      router.push("/dashboard");
+      
+      // 🟢 Wait a moment to ensure token is in localStorage before API calls
+      setTimeout(async () => {
+        const initializePresence = async () => {
+          try {
+            console.log("📡 Fetching user data after OAuth login...");
+            const response = await api.get("/users/me");
+            console.log("📊 /users/me response:", response.data);
+            
+            if (response.data) {
+              // Store user data
+              localStorage.setItem("user", JSON.stringify(response.data));
+              console.log("💾 User data stored");
+              
+              // 🔥 SEND INITIAL PRESENCE UPDATE TO BACKEND - MULTIPLE ATTEMPTS WITH LONGER DELAYS
+              let presenceSuccess = false;
+              for (let attempt = 1; attempt <= 5; attempt++) {
+                try {
+                  console.log(`📤 Sending presence update (attempt ${attempt}/5)...`);
+                  // Try calling with status="online" in case the backend needs it
+                  const presenceRes = await api.post("/users/me/presence", { status: "online" });
+                  console.log(`✅ Presence update sent successfully`, presenceRes.data);
+                  presenceSuccess = true;
+                  break; // Success, don't retry
+                } catch (err: any) {
+                  console.warn(`❌ Attempt ${attempt} failed:`, err.response?.status, err.message);
+                  if (attempt < 5) {
+                    const waitTime = 300 * attempt; // Exponential backoff
+                    console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                  }
+                }
+              }
+              
+              if (!presenceSuccess) {
+                console.error("🚨 FAILED TO SEND PRESENCE UPDATE AFTER 5 ATTEMPTS");
+              }
+              
+              // 🔥 VERIFY BACKEND WAS UPDATED
+              try {
+                console.log("🔍 Verifying backend presence update...");
+                const verifyRes = await api.get("/users/me");
+                console.log("🔍 Verification - Backend user data:", {
+                  isOnline: verifyRes.data.isOnline,
+                  lastSeenAt: verifyRes.data.lastSeenAt
+                });
+              } catch (err) {
+                console.warn("⚠️ Could not verify backend update:", err);
+              }
+              
+              // Get presence timeout
+              const presenceTimeoutMinutes = response.data.presenceTimeoutMinutes || 5;
+              console.log(`⏱️ Presence timeout: ${presenceTimeoutMinutes} minutes`);
+              
+              // 🔥 FORCE USER TO BE ONLINE IMMEDIATELY
+              console.log("🟢 Setting user as ONLINE immediately");
+              const now = new Date().toISOString();
+              setPresence({
+                isOnline: true,  // 🟢 ALWAYS true on login
+                lastSeenAt: now,
+              });
+              
+              // Start heartbeat to keep presence alive
+              console.log("❤️ Starting heartbeat...");
+              startHeartbeat(presenceTimeoutMinutes);
+              console.log("✅ Presence initialized for OAuth user - ONLINE");
+            }
+            
+            router.push("/dashboard");
+          } catch (error: any) {
+            console.error("❌ Error initializing presence for OAuth user:", error.message);
+            
+            // 🟢 EVEN IF ERROR, FORCE ONLINE STATE
+            console.log("🟢 Setting user as ONLINE anyway (error recovery)");
+            const now = new Date().toISOString();
+            setPresence({
+              isOnline: true,
+              lastSeenAt: now,
+            });
+            startHeartbeat(5); // Default 5 minutes
+            
+            // Still redirect to dashboard
+            router.push("/dashboard");
+          }
+        };
+        
+        await initializePresence();
+      }, 100);
     }
-  }, [router]);
+  }, [router, startHeartbeat, setPresence]);
 
   // Check if already logged in
   useEffect(() => {
@@ -45,6 +137,31 @@ export default function LoginPage() {
       if (response.data.type === "user") {
         localStorage.setItem("userToken", response.data.token);
         localStorage.setItem("user", JSON.stringify(response.data.user));
+        
+        console.log("🟢 Email login - Setting user as ONLINE immediately");
+        
+        // 🟢 Call presence endpoint to mark user online on backend
+        try {
+          console.log("📤 Sending initial presence update to backend...");
+          await api.post("/users/me/presence");
+          console.log("✅ Presence update sent to backend");
+        } catch (err) {
+          console.warn("⚠️ Could not send initial presence update:", err);
+        }
+        
+        // 🟢 Extract presence timeout and force online state
+        const presenceTimeoutMinutes = response.data.presenceTimeoutMinutes || 5;
+        const now = new Date().toISOString();
+        setPresence({
+          isOnline: true,  // 🟢 ALWAYS true on login
+          lastSeenAt: now,
+        });
+        
+        // 🟢 Start heartbeat with timeout value
+        console.log(`❤️ Starting heartbeat (${presenceTimeoutMinutes}m timeout)`);
+        startHeartbeat(presenceTimeoutMinutes);
+        
+        console.log("✅ User logged in - ONLINE status set");
         router.push("/dashboard");
       }
     } catch (error: any) {
@@ -59,11 +176,19 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#EBF4FF] to-[#90CDF4] relative overflow-hidden py-4">
+    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden py-4 ${
+      isDark 
+        ? 'bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b]'
+        : 'bg-gradient-to-br from-[#EBF4FF] to-[#90CDF4]'
+    }`}>
       
       {/* Background Elements */}
-      <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-[#7CA0D8] rounded-full opacity-20 blur-3xl"></div>
-      <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-[#5AC8FA] rounded-full opacity-20 blur-3xl"></div>
+      <div className={`absolute top-[-10%] right-[-5%] w-96 h-96 rounded-full opacity-20 blur-3xl ${
+        isDark ? 'bg-sky-500' : 'bg-[#7CA0D8]'
+      }`}></div>
+      <div className={`absolute bottom-[-10%] left-[-5%] w-96 h-96 rounded-full opacity-20 blur-3xl ${
+        isDark ? 'bg-indigo-600' : 'bg-[#5AC8FA]'
+      }`}></div>
 
       <div className="relative w-full max-w-lg px-4 z-10">
         
@@ -74,27 +199,35 @@ export default function LoginPage() {
           </div>
           <div className="text-2xl font-black tracking-tight">
             <span className="text-[#5AC8FA]">Skill</span>
-            <span className="text-[#204585]">-Link</span>
+            <span className={isDark ? 'text-sky-300' : 'text-[#204585]'}>-Link</span>
           </div>
         </div>
 
         {/* Card Container */}
-        <div className="bg-white rounded-[2rem] shadow-2xl border-2 border-white/50 px-8 py-6 relative">
+        <div className={`rounded-[2rem] shadow-2xl border-2 px-8 py-6 relative ${
+          isDark
+            ? 'bg-slate-800 border-slate-700'
+            : 'bg-white border-white/50'
+        }`}>
           
           <div className="text-center mb-4">
-            <h1 className="text-2xl font-black text-[#3d3f56]">Welcome Back</h1>
-            <p className="text-[#7CA0D8] font-bold text-sm mt-1">Sign in to continue</p>
+            <h1 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-[#3d3f56]'}`}>Welcome Back</h1>
+            <p className={`font-bold text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-[#7CA0D8]'}`}>Sign in to continue</p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border-2 border-red-200 text-red-700 px-3 py-2 rounded-lg font-bold text-center mb-4 text-xs">
+            <div className={`border-2 px-3 py-2 rounded-lg font-bold text-center mb-4 text-xs ${
+              isDark 
+                ? 'bg-red-500/20 border-red-500 text-red-300'
+                : 'bg-red-50 border-red-200 text-red-700'
+            }`}>
               {error}
             </div>
           )}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-black text-[#3d3f56] mb-2">
+              <label className={`block text-sm font-black mb-2 ${isDark ? 'text-white' : 'text-[#3d3f56]'}`}>
                 Email Address
               </label>
               <input
@@ -103,13 +236,17 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 placeholder="name@example.com"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#5AC8FA] text-sm font-bold text-[#3d3f56] placeholder:text-gray-300 transition-all bg-[#f8f9fc]"
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-sm font-bold transition-all ${
+                  isDark
+                    ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-sky-400'
+                    : 'bg-[#f8f9fc] border-gray-200 text-[#3d3f56] placeholder:text-gray-300 focus:border-[#5AC8FA]'
+                }`}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-black text-[#3d3f56] mb-2">
+              <label className={`block text-sm font-black mb-2 ${isDark ? 'text-white' : 'text-[#3d3f56]'}`}>
                 Password
               </label>
               <input
@@ -118,13 +255,17 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isLoading}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-[#5AC8FA] text-sm font-bold text-[#3d3f56] placeholder:text-gray-300 transition-all bg-[#f8f9fc]"
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-sm font-bold transition-all ${
+                  isDark
+                    ? 'bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus:border-sky-400'
+                    : 'bg-[#f8f9fc] border-gray-200 text-[#3d3f56] placeholder:text-gray-300 focus:border-[#5AC8FA]'
+                }`}
                 required
               />
               <div className="mt-2 text-right">
                 <a
                   href="/auth/forgot-password"
-                  className="text-xs font-black text-[#007AFF] hover:underline"
+                  className={`text-xs font-black hover:underline ${isDark ? 'text-sky-400' : 'text-[#007AFF]'}`}
                 >
                   Forgot password?
                 </a>
@@ -134,7 +275,11 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-[#5AC8FA] to-[#007AFF] hover:from-[#007AFF] hover:to-[#0062cc] text-white font-black text-base py-3 rounded-lg shadow-lg transition-transform transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+              className={`w-full font-black text-base py-3 rounded-lg shadow-lg transition-transform transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2 ${
+                isDark
+                  ? 'bg-gradient-to-r from-sky-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white'
+                  : 'bg-gradient-to-r from-[#5AC8FA] to-[#007AFF] hover:from-[#007AFF] hover:to-[#0062cc] text-white'
+              }`}
             >
               {isLoading ? (
                 "Signing In..."
@@ -148,17 +293,21 @@ export default function LoginPage() {
           </form>
 
           {/* OAuth Divider */}
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex-1 h-0.5 bg-gray-200"></div>
-            <span className="text-gray-400 font-bold text-xs">OR</span>
-            <div className="flex-1 h-0.5 bg-gray-200"></div>
+          <div className={`mt-4 flex items-center gap-3 ${isDark ? 'border-slate-600' : ''}`}>
+            <div className={`flex-1 h-0.5 ${isDark ? 'bg-slate-600' : 'bg-gray-200'}`}></div>
+            <span className={`font-bold text-xs ${isDark ? 'text-slate-400' : 'text-gray-400'}`}>OR</span>
+            <div className={`flex-1 h-0.5 ${isDark ? 'bg-slate-600' : 'bg-gray-200'}`}></div>
           </div>
 
           {/* Google OAuth Button */}
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full border-2 border-gray-200 hover:border-[#5AC8FA] text-gray-700 font-black text-sm py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all hover:bg-[#f8f9fc] mt-4"
+            className={`w-full border-2 font-black text-sm py-2.5 rounded-lg flex items-center justify-center gap-2 transition-all mt-4 ${
+              isDark
+                ? 'border-slate-600 text-slate-200 hover:bg-slate-700 hover:border-sky-400'
+                : 'border-gray-200 text-gray-700 hover:bg-[#f8f9fc] hover:border-[#5AC8FA]'
+            }`}
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -169,21 +318,21 @@ export default function LoginPage() {
             Sign in with Google
           </button>
 
-          <div className="mt-6 text-center space-y-3">
-            <p className="text-[#7CA0D8] font-bold text-sm">
+          <div className={`mt-6 text-center space-y-3`}>
+            <p className={`font-bold text-sm ${isDark ? 'text-slate-400' : 'text-[#7CA0D8]'}`}>
               Don't have an account?{" "}
-              <a href="/auth/signup" className="text-[#007AFF] hover:underline font-black">
+              <a href="/auth/signup" className={`hover:underline font-black ${isDark ? 'text-sky-400' : 'text-[#007AFF]'}`}>
                 Sign Up
               </a>
             </p>
             
-            <div className="w-full h-0.5 bg-gray-100 rounded-full"></div>
+            <div className={`w-full h-0.5 rounded-full ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}></div>
 
-            <div className="flex justify-center gap-4 text-xs font-bold text-gray-400">
-              <a href="/" className="hover:text-[#5AC8FA] transition-colors flex items-center gap-1">
+            <div className={`flex justify-center gap-4 text-xs font-bold ${isDark ? 'text-slate-500' : 'text-gray-400'}`}>
+              <a href="/" className={`transition-colors flex items-center gap-1 ${isDark ? 'hover:text-sky-400' : 'hover:text-[#5AC8FA]'}`}>
                 <ArrowLeft className="w-3 h-3" /> Back
               </a>
-              <a href="/admin/login" className="hover:text-[#5AC8FA] transition-colors">
+              <a href="/admin/login" className={`transition-colors ${isDark ? 'hover:text-sky-400' : 'hover:text-[#5AC8FA]'}`}>
                 Admin
               </a>
             </div>

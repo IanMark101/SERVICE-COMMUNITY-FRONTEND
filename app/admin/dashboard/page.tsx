@@ -17,6 +17,7 @@ import {
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 import api from "@/services/api";
+import { useLogout } from "@/hooks/useLogout";
 import SidebarItem from "./components/SideBarItem";
 import StatCard from "./components/StatCard";
 import UserTable from "./components/userTable";
@@ -81,6 +82,14 @@ export default function AdminDashboard() {
     return () => clearInterval(refreshInterval);
   }, []); // ✅ Empty dependency array - runs once on mount
 
+  // 🔄 Refresh data when switching to Users tab (to see fresh presence data)
+  useEffect(() => {
+    if (activeTab === "users") {
+      console.log("📋 Users tab opened - fetching fresh data");
+      fetchData();
+    }
+  }, [activeTab]);
+
   // ✅ FIXED: Better data fetching with error handling
   const fetchData = async () => {
     setIsLoading(true);
@@ -89,22 +98,32 @@ export default function AdminDashboard() {
       // ✅ REMOVED: Don't check token here since useEffect already verified it
       console.log("📡 Fetching admin data...");
 
+      // 🔧 Add cache-busting timestamp to prevent backend caching
+      const timestamp = Date.now();
+
       const [usersRes, reportsRes, postsStatsRes, categoriesRes, requestsRes, offersRes, userStatsRes, suggestionsRes] =
         await Promise.all([
-          api.get("/admin/users"),
-          api.get("/admin/reports"),
-          api.get("/admin/stats/posts"),
-          api.get("/admin/categories"),
-          api.get("/admin/requests"),
-          api.get("/admin/offers"),
-          api.get("/admin/stats/users"),
-          api.get("/suggestions/pending"),
+          api.get(`/admin/users?_t=${timestamp}`),
+          api.get(`/admin/reports?_t=${timestamp}`),
+          api.get(`/admin/stats/posts?_t=${timestamp}`),
+          api.get(`/admin/categories?_t=${timestamp}`),
+          api.get(`/admin/requests?_t=${timestamp}`),
+          api.get(`/admin/offers?_t=${timestamp}`),
+          api.get(`/admin/stats/users?_t=${timestamp}`),
+          api.get(`/suggestions/pending?_t=${timestamp}`),
         ]);
 
       // Extract data
       const usersData = Array.isArray(usersRes.data) 
         ? usersRes.data 
         : (usersRes.data?.users || []);
+      
+      // 🔥 DEBUG: Log all user presence data
+      console.group("🔥 ADMIN /users DATA:");
+      usersData.forEach((user: any) => {
+        console.log(`${user.name}: isOnline=${user.isOnline}, lastSeenAt=${user.lastSeenAt}`);
+      });
+      console.groupEnd();
     
       const reportsData = Array.isArray(reportsRes.data) 
         ? reportsRes.data 
@@ -248,12 +267,12 @@ export default function AdminDashboard() {
     }
   };
 
-  // ✅ FIXED: Removed the API call that was causing 404 error
-  const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    localStorage.removeItem("adminUser");
-    console.log("✅ Admin logged out successfully");
-    router.push("/admin/login");
+  // 🟢 Use logout hook to handle presence cleanup and logout
+  const { logout } = useLogout();
+
+  const handleLogout = async () => {
+    console.log("🚪 Logout button clicked");
+    await logout(true);
   };
 
   return (

@@ -28,6 +28,7 @@ import ContactModal from "./components/ContactModal";
 import SettingsModals from "./components/SettingsModals";
 import SuggestionModal from "./components/SuggestionModal";
 import { useDarkMode } from "@/app/context/DarkModeContext";
+import { useLogout } from "@/hooks/useLogout";
 
 interface Category { id: string; name: string; createdAt: string }
 interface User { id: string; name: string; email: string }
@@ -47,6 +48,7 @@ const OFFERS_PER_PAGE = 3;
 export default function Dashboard() {
   const router = useRouter();
   const { isDark } = useDarkMode();
+  const { logout } = useLogout();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -217,10 +219,9 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("user");
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    console.log("🚪 User logout initiated");
+    await logout(false); // false = user logout (not admin)
   };
 
   // Components

@@ -1,9 +1,38 @@
 import React, { useState } from "react";
 import { Search, Ban, CheckCircle, User, MoreHorizontal, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 
+// Helper function to format last seen time
+const getLastSeenText = (lastSeenAt?: string) => {
+  if (!lastSeenAt) return "Never";
+
+  const lastSeen = new Date(lastSeenAt);
+  const now = new Date();
+  const diffMs = now.getTime() - lastSeen.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return lastSeen.toLocaleDateString();
+};
+
 export default function UserTable({ users, isLoading, toggleBanUser }: any) {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Debug: Log users data for presence checking
+  React.useEffect(() => {
+    if (users && users.length > 0) {
+      console.log("📊 UserTable received users data:");
+      users.forEach((user: any) => {
+        console.log(`  - ${user.name || user.email}: isOnline=${user.isOnline}, lastSeenAt=${user.lastSeenAt}`);
+      });
+    }
+  }, [users]);
   
   // --- Pagination Configuration ---
   const itemsPerPage = 5; 
@@ -88,6 +117,8 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
                     </div>
                   </th>
                   <th className="px-10 py-7 text-sm font-bold text-slate-300 uppercase tracking-wider">Status</th>
+                  <th className="px-10 py-7 text-sm font-bold text-slate-300 uppercase tracking-wider">Presence</th>
+                  <th className="px-10 py-7 text-sm font-bold text-slate-300 uppercase tracking-wider">Last Seen</th>
                   <th className="px-10 py-7 text-sm font-bold text-slate-300 uppercase tracking-wider text-right">Quick Actions</th>
                 </tr>
               </thead>
@@ -107,6 +138,12 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
                       </td>
                       <td className="px-10 py-8">
                         <div className="h-7 w-20 bg-slate-800 rounded-full"></div>
+                      </td>
+                      <td className="px-10 py-8">
+                        <div className="h-7 w-16 bg-slate-800 rounded-full"></div>
+                      </td>
+                      <td className="px-10 py-8">
+                        <div className="h-4 w-20 bg-slate-800 rounded"></div>
                       </td>
                       <td className="px-10 py-8 text-right">
                         <div className="h-10 w-24 bg-slate-800 rounded-lg ml-auto"></div>
@@ -153,8 +190,27 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
                             <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${user.banned ? 'bg-red-500' : 'bg-emerald-400'}`}></span>
                             <span className={`relative inline-flex rounded-full h-2 w-2 ${user.banned ? 'bg-red-400' : 'bg-emerald-300'}`}></span>
                           </span>
-                          {user.banned ? 'Suspended' : 'Active Now'}
+                          {user.banned ? 'Suspended' : 'Active'}
                         </div>
+                      </td>
+
+                      {/* Presence Status */}
+                      <td className="px-10 py-8">
+                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border ${
+                          user.isOnline 
+                            ? 'bg-green-500/20 text-green-100 border-green-500/40' 
+                            : 'bg-gray-500/20 text-gray-100 border-gray-500/40'
+                        }`}>
+                          <span className={`h-2 w-2 rounded-full ${user.isOnline ? 'bg-green-400' : 'bg-gray-400'}`}></span>
+                          {user.isOnline ? 'Online' : 'Offline'}
+                        </div>
+                      </td>
+
+                      {/* Last Seen */}
+                      <td className="px-10 py-8">
+                        <span className="text-sm text-slate-300 font-medium">
+                          {getLastSeenText(user.lastSeenAt)}
+                        </span>
                       </td>
 
                       {/* Actions */}
@@ -186,7 +242,7 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
                 ) : (
                   // Empty State / No Results
                   <tr>
-                    <td colSpan={3} className="px-10 py-32 text-center">
+                    <td colSpan={5} className="px-10 py-32 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-inner shadow-black/20">
                           <Search className="text-slate-500 w-10 h-10" />

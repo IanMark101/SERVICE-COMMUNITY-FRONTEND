@@ -26,3 +26,43 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* 🎨 Premium Modern Scrollbar Design */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3b82f6 0%, #0ea5e9 50%, #06b6d4 100%);
+  border-radius: 8px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 40px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2563eb 0%, #0895dd 50%, #0891b2 100%);
+  width: 16px;
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #1d4ed8 0%, #0684d4 50%, #0d7f8f 100%);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.6);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: #3b82f6 transparent;
+  scrollbar-width: thin;
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
