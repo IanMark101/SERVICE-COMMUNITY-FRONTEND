@@ -174,7 +174,7 @@ export default function LoginPage() {
   const handleGoogleLogin = () => {
   // Use the environment variable. Fallback to localhost only if the variable is missing.
   const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-  window.location.href = `${API_URL}/api/auth/google`;
+  window.location.href = `https://${API_URL}/api/auth/google`;
 };
 
   return (
