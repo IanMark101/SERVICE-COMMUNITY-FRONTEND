@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, RefObject } from "react";
+import { FormEvent, RefObject, LegacyRef } from "react";
 import { MessageCircle, Send } from "lucide-react";
 import { Message } from "../types";
 import { useDarkMode } from "@/app/context/DarkModeContext";
@@ -15,7 +15,7 @@ interface ChatAreaProps {
   onMessageTextChange: (value: string) => void;
   onSendMessage: (event: FormEvent<HTMLFormElement>) => void;
   sendingMessage: boolean;
-  messagesEndRef: RefObject<HTMLDivElement | null>;
+  messagesEndRef: LegacyRef<HTMLDivElement>;
 }
 
 export default function ChatArea({

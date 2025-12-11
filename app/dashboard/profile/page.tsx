@@ -339,7 +339,7 @@ export default function ProfilePage() {
           }`}>
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-8">
               {/* Avatar */}
-              <div className="w-24 h-24 lg:w-32 lg:h-32 bg-gradient-to-br from-[#5AC8FA] to-[#007AFF] rounded-full flex items-center justify-center text-white text-4xl lg:text-6xl font-black flex-shrink-0">
+              <div className={`w-24 h-24 lg:w-32 lg:h-32 rounded-full flex items-center justify-center text-white text-4xl lg:text-6xl font-black flex-shrink-0 ${isDark ? 'bg-gradient-to-br from-sky-500 to-teal-500' : 'bg-gradient-to-br from-[#5AC8FA] to-[#007AFF]'}`}>
                 {user?.name?.[0]?.toUpperCase() || "?"}
               </div>
 
