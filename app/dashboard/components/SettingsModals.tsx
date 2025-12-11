@@ -2,6 +2,7 @@
 
 import { X, LogOut, Lock, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useDarkMode } from "@/app/context/DarkModeContext";
 import api from "@/services/api";
 
 interface SettingsModalsProps {
@@ -27,6 +28,7 @@ export default function SettingsModals({
   onChangePasswordClick,
   onLogout,
 }: SettingsModalsProps) {
+  const { isDark } = useDarkMode();
   const [editForm, setEditForm] = useState({ name: "", email: "" });
   const [editLoading, setEditLoading] = useState(false);
 
@@ -102,39 +104,49 @@ export default function SettingsModals({
   if (showSettings) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-4">
-          <h2 className="text-3xl font-black text-[#3d3f56] mb-6">Settings</h2>
+        <div className={`rounded-2xl p-8 max-w-sm w-full shadow-2xl border-2 ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700' : 'bg-white border-[#e8eaf5]'}`}>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className={`text-2xl font-black ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>Settings</h2>
+            <button
+              onClick={onCloseSettings}
+              className={`transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#3d3f56]'}`}
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
 
-          <button
-            onClick={onEditProfileClick}
-            className="w-full bg-[#1CC4B6] hover:bg-[#19b0a3] text-white font-black py-3 px-6 rounded-full transition-all text-lg flex items-center gap-3"
-          >
-            <span>✏️</span>
-            Edit Profile
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={onEditProfileClick}
+              className={`w-full text-white font-black py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
+            >
+              <span>✏️</span>
+              Edit Profile
+            </button>
 
-          <button
-            onClick={onChangePasswordClick}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-3 px-6 rounded-full transition-all text-lg flex items-center gap-3"
-          >
-            <Lock className="w-6 h-6" />
-            Change Password
-          </button>
+            <button
+              onClick={onChangePasswordClick}
+              className={`w-full text-white font-black py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${isDark ? 'bg-sky-600 hover:bg-sky-700' : 'bg-[#7CA0D8] hover:bg-[#6a8ec7]'}`}
+            >
+              <Lock className="w-5 h-5" />
+              Change Password
+            </button>
 
-          <button
-            onClick={onLogout}
-            className="w-full bg-red-500 hover:bg-red-600 text-white font-black py-3 px-6 rounded-full transition-all text-lg flex items-center gap-3"
-          >
-            <LogOut className="w-6 h-6" />
-            Logout
-          </button>
+            <button
+              onClick={onLogout}
+              className={`w-full text-white font-black py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${isDark ? 'bg-red-700 hover:bg-red-800' : 'bg-[#FF6B6B] hover:bg-[#ee5a52]'}`}
+            >
+              <LogOut className="w-5 h-5" />
+              Logout
+            </button>
 
-          <button
-            onClick={onCloseSettings}
-            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-full transition-all"
-          >
-            Close
-          </button>
+            <button
+              onClick={onCloseSettings}
+              className={`w-full font-bold py-3 rounded-lg transition-all border-2 ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-sky-400 border-slate-600' : 'bg-[#f5f6fb] hover:bg-[#e8eaf5] text-[#7CA0D8] border-[#e8eaf5]'}`}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -144,52 +156,60 @@ export default function SettingsModals({
   if (showEditProfile) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-black text-[#3d3f56]">Edit Profile</h2>
-            <button onClick={onCloseEditProfile} className="text-gray-500 hover:text-black">
-              <X className="w-7 h-7" />
+        <div className={`rounded-2xl p-8 max-w-sm w-full shadow-2xl border-2 ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700' : 'bg-white border-[#e8eaf5]'}`}>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className={`text-2xl font-black flex items-center gap-2 ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>
+              <span>✏️</span>
+              Edit Profile
+            </h2>
+            <button onClick={onCloseEditProfile} className={`transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#3d3f56]'}`}>
+              <X className="w-6 h-6" />
             </button>
           </div>
 
-          <form onSubmit={handleUpdateProfile} className="space-y-4">
+          <form onSubmit={handleUpdateProfile} className="space-y-5">
             <div>
-              <label className="block text-lg font-bold text-black mb-2">Name</label>
+              <label className={`block text-sm font-black mb-2 ${isDark ? 'text-slate-200' : 'text-[#3d3f56]'}`}>Full Name</label>
               <input
                 type="text"
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#6FA3EF] text-base font-semibold text-gray-900"
+                placeholder="Enter your name"
+                className={`w-full px-4 py-3 border-2 rounded-lg font-semibold focus:outline-none transition-all ${isDark ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400 focus:border-teal-500' : 'border-[#e8eaf5] focus:border-[#1CC4B6] text-[#3d3f56] bg-[#f5f6fb] placeholder:text-[#9CA3B8]'}`}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-lg font-bold text-black mb-2">Email</label>
+              <label className={`block text-sm font-black mb-2 ${isDark ? 'text-slate-200' : 'text-[#3d3f56]'}`}>Email Address</label>
               <input
                 type="email"
                 value={editForm.email}
                 onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#6FA3EF] text-base font-semibold text-gray-900"
+                placeholder="Enter your email"
+                className={`w-full px-4 py-3 border-2 rounded-lg font-semibold focus:outline-none transition-all ${isDark ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400 focus:border-teal-500' : 'border-[#e8eaf5] focus:border-[#1CC4B6] text-[#3d3f56] bg-[#f5f6fb] placeholder:text-[#9CA3B8]'}`}
                 required
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={editLoading}
-              className="w-full bg-[#1CC4B6] hover:bg-[#19b0a3] disabled:opacity-50 text-white font-black py-3 rounded-full text-lg transition-all"
-            >
-              {editLoading ? "Updating..." : "Update Profile"}
-            </button>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onCloseEditProfile}
+                disabled={editLoading}
+                className={`flex-1 font-bold py-3 rounded-lg transition-all border-2 ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-sky-400 border-slate-600' : 'bg-[#f5f6fb] hover:bg-[#e8eaf5] text-[#7CA0D8] border-[#e8eaf5]'}`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={editLoading}
+                className={`flex-1 disabled:opacity-60 text-white font-black py-3 rounded-lg transition-all shadow-md hover:shadow-lg ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
+              >
+                {editLoading ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
           </form>
-
-          <button
-            onClick={onCloseEditProfile}
-            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-full transition-all"
-          >
-            Close
-          </button>
         </div>
       </div>
     );
@@ -199,35 +219,39 @@ export default function SettingsModals({
   if (showChangePassword) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-4">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-black text-[#3d3f56]">Change Password</h2>
-            <button onClick={onCloseChangePassword} className="text-gray-500 hover:text-black">
-              <X className="w-7 h-7" />
+        <div className={`rounded-2xl p-8 max-w-sm w-full shadow-2xl border-2 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700' : 'bg-white border-[#e8eaf5]'}`}>
+          <div className="flex items-center justify-between mb-8">
+            <h2 className={`text-2xl font-black flex items-center gap-2 ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>
+              🔐
+              Change Password
+            </h2>
+            <button onClick={onCloseChangePassword} className={`transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#3d3f56]'}`}>
+              <X className="w-6 h-6" />
             </button>
           </div>
 
-          <form onSubmit={handleChangePassword} className="space-y-4">
+          <form onSubmit={handleChangePassword} className="space-y-5">
             {[
-              { key: "currentPassword", label: "Current Password" },
-              { key: "newPassword", label: "New Password" },
-              { key: "confirmPassword", label: "Confirm Password" },
-            ].map(({ key, label }) => (
+              { key: "currentPassword", label: "Current Password", placeholder: "Enter current password" },
+              { key: "newPassword", label: "New Password", placeholder: "Enter new password" },
+              { key: "confirmPassword", label: "Confirm New Password", placeholder: "Confirm new password" },
+            ].map(({ key, label, placeholder }) => (
               <div key={key}>
-                <label className="block text-lg font-bold text-black mb-2">{label}</label>
+                <label className={`block text-sm font-black mb-2 ${isDark ? 'text-slate-200' : 'text-[#3d3f56]'}`}>{label}</label>
                 <div className="relative">
                   <input
                     type={showPasswordFields ? "text" : "password"}
                     value={passwordForm[key as keyof typeof passwordForm]}
                     onChange={(e) => setPasswordForm({ ...passwordForm, [key]: e.target.value })}
-                    className="w-full px-4 py-3 pr-11 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#6FA3EF] text-base font-semibold text-gray-900"
+                    placeholder={placeholder}
+                    className={`w-full px-4 py-3 pr-11 border-2 rounded-lg font-semibold focus:outline-none transition-all ${isDark ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400 focus:border-teal-500' : 'border-[#e8eaf5] focus:border-[#7CA0D8] text-[#3d3f56] bg-[#f5f6fb] placeholder:text-[#9CA3B8]'}`}
                     disabled={passwordLoading}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswordFields(!showPasswordFields)}
-                    className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                    className={`absolute right-3 top-3 transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#7CA0D8]'}`}
                     tabIndex={-1}
                   >
                     {showPasswordFields ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -236,21 +260,24 @@ export default function SettingsModals({
               </div>
             ))}
 
-            <button
-              type="submit"
-              disabled={passwordLoading}
-              className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-black py-3 rounded-full text-lg transition-all"
-            >
-              {passwordLoading ? "Updating..." : "Change Password"}
-            </button>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onCloseChangePassword}
+                disabled={passwordLoading}
+                className={`flex-1 font-bold py-3 rounded-lg transition-all border-2 ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-sky-400 border-slate-600' : 'bg-[#f5f6fb] hover:bg-[#e8eaf5] text-[#7CA0D8] border-[#e8eaf5]'}`}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={passwordLoading}
+                className={`flex-1 disabled:opacity-60 text-white font-black py-3 rounded-lg transition-all shadow-md hover:shadow-lg ${isDark ? 'bg-sky-600 hover:bg-sky-700' : 'bg-[#7CA0D8] hover:bg-[#6a8ec7]'}`}
+              >
+                {passwordLoading ? "Updating..." : "Update"}
+              </button>
+            </div>
           </form>
-
-          <button
-            onClick={onCloseChangePassword}
-            className="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-full transition-all"
-          >
-            Close
-          </button>
         </div>
       </div>
     );

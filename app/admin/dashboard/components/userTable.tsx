@@ -36,32 +36,30 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
 
 
   return (
-    <div className="p-4 sm:p-10 bg-slate-50/50 min-h-screen flex justify-center font-sans">
+    <div className="p-6 sm:p-12 bg-transparent min-h-0 flex justify-center font-sans text-slate-100">
       <div className="w-full max-w-6xl">
-        
         {/* Main Card Container */}
-        <div className="bg-white rounded-3xl shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-          
+        <div className="bg-slate-900/80 rounded-3xl shadow-2xl shadow-black/40 border border-slate-800/80 overflow-hidden backdrop-blur-xl">
           {/* Header Section with Gradient & Blur */}
-          <div className="relative p-8 border-b border-slate-100 bg-gradient-to-r from-white via-slate-50/30 to-white">
+          <div className="relative p-10 border-b border-slate-800/80 bg-gradient-to-r from-slate-950/90 via-slate-900/70 to-slate-950/80">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               
               {/* Title Area */}
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <div className="p-2.5 bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20 text-white">
+                  <div className="p-2.5 bg-gradient-to-br from-cyan-500 via-sky-500 to-indigo-500 rounded-xl shadow-lg shadow-sky-600/40 text-white border border-white/20 backdrop-blur-sm">
                     <User size={20} strokeWidth={2.5} />
                   </div>
-                  <h3 className="font-extrabold text-slate-800 text-2xl tracking-tight">User Management</h3>
+                  <h3 className="font-extrabold text-slate-50 text-3xl tracking-tight">User Management</h3>
                 </div>
-                <p className="text-slate-500 font-medium ml-1">Overview of all registered members ({allUsers.length} total)</p>
+                <p className="text-slate-400 font-medium ml-1 text-lg">Overview of all registered members ({allUsers.length} total)</p>
               </div>
 
               {/* Action Area */}
               <div className="flex gap-3">
                 <div className="relative group w-full md:w-72">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                    <Search className="h-4 w-4 text-slate-400 group-focus-within:text-sky-300 transition-colors" />
                   </div>
                   <input 
                     type="text" 
@@ -71,7 +69,7 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
                       setCurrentPage(1); // Reset to page 1 on new search
                     }}
                     placeholder="Search by name or email..." 
-                    className="block w-full pl-10 pr-4 py-3 text-sm font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white transition-all placeholder:text-slate-400"
+                    className="block w-full pl-10 pr-4 py-4 text-base font-medium text-slate-100 bg-slate-900/70 border border-slate-700 rounded-xl focus:ring-4 focus:ring-sky-500/40 focus:border-sky-400 focus:bg-slate-900/90 transition-all placeholder:text-slate-500"
                   />
                 </div>
               </div>
@@ -82,36 +80,36 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider hover:text-slate-600 cursor-pointer transition-colors group">
+                <tr className="bg-slate-900/80 border-b border-slate-800/80">
+                  <th className="px-10 py-7 text-sm font-bold text-slate-300 uppercase tracking-wider hover:text-sky-300 cursor-pointer transition-colors group">
                     <div className="flex items-center gap-2">
                       User Profile
-                      <ArrowUpDown size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ArrowUpDown size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </th>
-                  <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
-                  <th className="px-8 py-5 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Quick Actions</th>
+                  <th className="px-10 py-7 text-sm font-bold text-slate-300 uppercase tracking-wider">Status</th>
+                  <th className="px-10 py-7 text-sm font-bold text-slate-300 uppercase tracking-wider text-right">Quick Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 bg-white">
+              <tbody className="divide-y divide-slate-800/60 bg-slate-900/60">
                 {isLoading ? (
                   // Skeleton Loading State (shows 5 items for the page limit)
                   [...Array(itemsPerPage)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
-                      <td className="px-8 py-6">
+                      <td className="px-10 py-8">
                         <div className="flex items-center gap-4">
-                          <div className="w-11 h-11 rounded-full bg-slate-100"></div>
+                          <div className="w-14 h-14 rounded-full bg-slate-800"></div>
                           <div className="space-y-2">
-                            <div className="h-4 w-32 bg-slate-100 rounded"></div>
-                            <div className="h-3 w-24 bg-slate-100 rounded"></div>
+                            <div className="h-5 w-32 bg-slate-800 rounded"></div>
+                            <div className="h-4 w-24 bg-slate-800 rounded"></div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-8 py-6">
-                        <div className="h-6 w-16 bg-slate-100 rounded-full"></div>
+                      <td className="px-10 py-8">
+                        <div className="h-7 w-20 bg-slate-800 rounded-full"></div>
                       </td>
-                      <td className="px-8 py-6 text-right">
-                        <div className="h-8 w-20 bg-slate-100 rounded-lg ml-auto"></div>
+                      <td className="px-10 py-8 text-right">
+                        <div className="h-10 w-24 bg-slate-800 rounded-lg ml-auto"></div>
                       </td>
                     </tr>
                   ))
@@ -119,28 +117,25 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
                   currentUsers.map((user: any) => (
                     <tr 
                       key={user.id} 
-                      className="group transition-all duration-300 hover:bg-slate-50/50 hover:shadow-lg hover:shadow-slate-100 hover:-translate-y-0.5 relative"
+                      className="group transition-all duration-300 hover:bg-slate-800/70 hover:shadow-lg hover:shadow-sky-500/10 hover:-translate-y-0.5 relative border-l-4 border-l-transparent hover:border-l-sky-400"
                     >
-                      {/* Left Accent Border on Hover */}
-                      <td className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity rounded-r"></td>
-
                       {/* User Info */}
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-4">
+                      <td className="px-10 py-8">
+                        <div className="flex items-center gap-5">
                           <div className="relative">
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-md shadow-blue-500/20 ring-4 ring-white">
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 via-sky-500 to-indigo-600 flex items-center justify-center text-lg font-bold text-white shadow-md shadow-sky-500/30 ring-4 ring-slate-900">
                               {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                             </div>
                             {/* Online Dot */}
                             {!user.banned && (
-                              <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-white"></span>
+                              <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-slate-900 shadow-lg shadow-emerald-400/50"></span>
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-slate-700 group-hover:text-blue-600 transition-colors text-sm">
+                            <p className="font-bold text-slate-100 group-hover:text-sky-300 transition-colors text-base">
                               {user.name || "Unknown User"}
                             </p>
-                            <p className="text-slate-400 text-xs mt-0.5 font-medium tracking-wide">
+                            <p className="text-slate-400 text-sm mt-1 font-medium tracking-wide">
                               {user.email}
                             </p>
                           </div>
@@ -148,36 +143,36 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
                       </td>
 
                       {/* Status Badge */}
-                      <td className="px-8 py-5">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm ${
+                      <td className="px-10 py-8">
+                        <div className={`inline-flex items-center gap-3 px-4 py-2 rounded-full text-sm font-bold border shadow-sm backdrop-blur-sm ${
                           user.banned 
-                            ? 'bg-red-50 text-red-600 border-red-100 shadow-red-100/50' 
-                            : 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-emerald-100/50'
+                            ? 'bg-red-500/15 text-red-100 border-red-500/40 shadow-red-500/20' 
+                            : 'bg-emerald-500/15 text-emerald-100 border-emerald-500/40 shadow-emerald-500/20'
                         }`}>
                           <span className={`relative flex h-2 w-2`}>
-                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${user.banned ? 'bg-red-400' : 'bg-emerald-400'}`}></span>
-                            <span className={`relative inline-flex rounded-full h-2 w-2 ${user.banned ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${user.banned ? 'bg-red-500' : 'bg-emerald-400'}`}></span>
+                            <span className={`relative inline-flex rounded-full h-2 w-2 ${user.banned ? 'bg-red-400' : 'bg-emerald-300'}`}></span>
                           </span>
                           {user.banned ? 'Suspended' : 'Active Now'}
                         </div>
                       </td>
 
                       {/* Actions */}
-                      <td className="px-8 py-5 text-right">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <td className="px-10 py-8 text-right">
+                        <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                           {/* Secondary Action (Mock) */}
-                          <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                            <MoreHorizontal size={18} />
+                          <button className="p-3 text-slate-400 hover:text-slate-200 hover:bg-slate-700/60 rounded-lg transition-all">
+                            <MoreHorizontal size={20} />
                           </button>
 
                           {/* Primary Action */}
                           <button 
                             onClick={() => toggleBanUser(user.id, user.banned)}
                             className={`
-                              flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all active:scale-95
+                              flex items-center gap-2 px-5 py-3 rounded-lg text-sm font-bold shadow-sm transition-all active:scale-95 border backdrop-blur-sm
                               ${user.banned 
-                                ? 'bg-white text-emerald-600 border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50' 
-                                : 'bg-white text-red-600 border border-slate-200 hover:border-red-500 hover:bg-red-50'
+                                ? 'bg-emerald-500/20 text-emerald-100 border-emerald-500/40 hover:border-emerald-400 hover:bg-emerald-500/25 shadow-emerald-500/20' 
+                                : 'bg-red-500/20 text-red-100 border-red-500/40 hover:border-red-400 hover:bg-red-500/25 shadow-red-500/20'
                               }
                             `}
                           >
@@ -191,13 +186,13 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
                 ) : (
                   // Empty State / No Results
                   <tr>
-                    <td colSpan={3} className="px-8 py-24 text-center">
+                    <td colSpan={3} className="px-10 py-32 text-center">
                       <div className="flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 shadow-inner">
-                          <Search className="text-slate-300 w-8 h-8" />
+                        <div className="w-20 h-20 bg-slate-800 rounded-full flex items-center justify-center mb-6 shadow-inner shadow-black/20">
+                          <Search className="text-slate-500 w-10 h-10" />
                         </div>
-                        <h3 className="text-slate-800 font-semibold text-lg">No users found</h3>
-                        <p className="text-slate-400 max-w-xs mx-auto mt-1">
+                        <h3 className="text-slate-100 font-semibold text-2xl">No users found</h3>
+                        <p className="text-slate-400 max-w-xs mx-auto mt-2 text-base">
                           {searchTerm ? `No results found for "${searchTerm}".` : "There are no users to display."}
                         </p>
                       </div>
@@ -209,29 +204,29 @@ export default function UserTable({ users, isLoading, toggleBanUser }: any) {
           </div>
           
           {/* Footer / Pagination Controls */}
-          <div className="bg-white border-t border-slate-100 p-4 px-8 flex items-center justify-between text-xs font-medium text-slate-500">
-             <span className="text-sm text-slate-600">
-                Showing <span className="font-semibold">{startRange}</span> to <span className="font-semibold">{endRange}</span> of <span className="font-semibold">{filteredUsers.length}</span> results
+            <div className="bg-slate-900/70 border-t border-slate-800/80 p-6 px-10 flex items-center justify-between text-sm font-medium text-slate-300">
+             <span className="text-base text-slate-200">
+                Showing <span className="font-semibold text-sky-300">{startRange}</span> to <span className="font-semibold text-sky-300">{endRange}</span> of <span className="font-semibold text-sky-300">{filteredUsers.length}</span> results
              </span>
              
-             <div className="flex gap-2">
+             <div className="flex gap-3">
                 <button 
                     onClick={handlePreviousPage}
                     disabled={currentPage === 1 || filteredUsers.length === 0}
-                    className="px-3 py-1.5 border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                className="px-4 py-2.5 border border-slate-700 rounded-lg bg-slate-800/60 text-slate-200 hover:bg-slate-700 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-semibold"
                 >
                     <ChevronLeft size={16} /> Previous
                 </button>
                 
                 {/* Page Number Indicator */}
-                <div className="px-3 py-1.5 border border-blue-500 rounded-lg bg-blue-50 text-blue-600 font-bold text-sm flex items-center justify-center">
+              <div className="px-4 py-2.5 border border-sky-500/40 rounded-lg bg-sky-500/20 text-sky-200 font-bold text-base flex items-center justify-center shadow-lg shadow-sky-500/20">
                     {currentPage}
                 </div>
 
                 <button 
                     onClick={handleNextPage}
                     disabled={currentPage === totalPages || filteredUsers.length === 0}
-                    className="px-3 py-1.5 border border-slate-200 rounded-lg bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+                className="px-4 py-2.5 border border-slate-700 rounded-lg bg-slate-800/60 text-slate-200 hover:bg-slate-700 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 text-sm font-semibold"
                 >
                     Next <ChevronRight size={16} />
                 </button>

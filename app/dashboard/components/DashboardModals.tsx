@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Lock, LogOut, Eye, EyeOff, X, Edit2 } from "lucide-react";
+import { useDarkMode } from "@/app/context/DarkModeContext";
 import api from "@/services/api";
 
 interface DashboardModalsProps {
@@ -23,6 +24,7 @@ export default function DashboardModals({
   setShowEditProfileModal,
   onLogout,
 }: DashboardModalsProps) {
+  const { isDark } = useDarkMode();
   const [editForm, setEditForm] = useState({ name: "", email: "" });
   const [changePasswordForm, setChangePasswordForm] = useState({
     currentPassword: "",
@@ -137,14 +139,14 @@ export default function DashboardModals({
           ============================================ */}
       {showSettingsModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-black text-[#3d3f56]">Settings</h2>
+          <div className={`rounded-2xl p-8 max-w-sm w-full shadow-2xl border-2 ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700' : 'bg-white border-[#e8eaf5]'}`}>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className={`text-2xl font-black ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>Settings</h2>
               <button
                 onClick={() => setShowSettingsModal(false)}
-                className="text-gray-500 hover:text-black transition-all"
+                className={`transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#3d3f56]'}`}
               >
-                <X className="w-7 h-7" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
@@ -155,9 +157,9 @@ export default function DashboardModals({
                   setShowSettingsModal(false);
                   setShowEditProfileModal(true);
                 }}
-                className="w-full bg-[#1CC4B6] hover:bg-[#19b0a3] text-white font-black py-3 px-6 rounded-full transition-all text-lg flex items-center gap-3"
+                className={`w-full text-white font-black py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
               >
-                <Edit2 className="w-6 h-6" />
+                <Edit2 className="w-5 h-5" />
                 Edit Profile
               </button>
 
@@ -167,9 +169,9 @@ export default function DashboardModals({
                   setShowSettingsModal(false);
                   setShowChangePasswordModal(true);
                 }}
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-black py-3 px-6 rounded-full transition-all text-lg flex items-center gap-3"
+                className={`w-full text-white font-black py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${isDark ? 'bg-sky-600 hover:bg-sky-700' : 'bg-[#7CA0D8] hover:bg-[#6a8ec7]'}`}
               >
-                <Lock className="w-6 h-6" />
+                <Lock className="w-5 h-5" />
                 Change Password
               </button>
 
@@ -179,16 +181,16 @@ export default function DashboardModals({
                   setShowSettingsModal(false);
                   onLogout();
                 }}
-                className="w-full bg-red-500 hover:bg-red-600 text-white font-black py-3 px-6 rounded-full transition-all text-lg flex items-center gap-3"
+                className={`w-full text-white font-black py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-md hover:shadow-lg ${isDark ? 'bg-red-700 hover:bg-red-800' : 'bg-[#FF6B6B] hover:bg-[#ee5a52]'}`}
               >
-                <LogOut className="w-6 h-6" />
+                <LogOut className="w-5 h-5" />
                 Logout
               </button>
 
               {/* Close Button */}
               <button
                 onClick={() => setShowSettingsModal(false)}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-full transition-all"
+                className={`w-full font-bold py-3 rounded-lg transition-all border-2 ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-sky-400 border-slate-600' : 'bg-[#f5f6fb] hover:bg-[#e8eaf5] text-[#7CA0D8] border-[#e8eaf5]'}`}
               >
                 Close
               </button>
@@ -202,25 +204,25 @@ export default function DashboardModals({
           ============================================ */}
       {showEditProfileModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-black text-[#3d3f56] flex items-center gap-2">
-                <Edit2 className="w-8 h-8" />
+          <div className={`rounded-2xl p-8 max-w-sm w-full shadow-2xl border-2 ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700' : 'bg-white border-[#e8eaf5]'}`}>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className={`text-2xl font-black flex items-center gap-2 ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>
+                <Edit2 className={`w-6 h-6 ${isDark ? 'text-teal-500' : 'text-[#1CC4B6]'}`} />
                 Edit Profile
               </h2>
               <button
                 onClick={handleCloseEditModal}
-                className="text-gray-500 hover:text-black transition-all"
+                className={`transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#3d3f56]'}`}
               >
-                <X className="w-7 h-7" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Name Input */}
               <div>
-                <label className="block text-lg font-bold text-black mb-2">
-                  Name
+                <label className={`block text-sm font-black mb-2 ${isDark ? 'text-slate-200' : 'text-[#3d3f56]'}`}>
+                  Full Name
                 </label>
                 <input
                   type="text"
@@ -229,15 +231,15 @@ export default function DashboardModals({
                     setEditForm({ ...editForm, name: e.target.value })
                   }
                   placeholder="Enter your name"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl font-semibold focus:outline-none focus:border-[#1CC4B6] text-gray-900"
+                  className={`w-full px-4 py-3 border-2 rounded-lg font-semibold focus:outline-none transition-all ${isDark ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400 focus:border-teal-500' : 'border-[#e8eaf5] focus:border-[#1CC4B6] text-[#3d3f56] bg-[#f5f6fb] placeholder:text-[#9CA3B8]'}`}
                   disabled={editLoading}
                 />
               </div>
 
               {/* Email Input */}
               <div>
-                <label className="block text-lg font-bold text-black mb-2">
-                  Email
+                <label className={`block text-sm font-black mb-2 ${isDark ? 'text-slate-200' : 'text-[#3d3f56]'}`}>
+                  Email Address
                 </label>
                 <input
                   type="email"
@@ -246,17 +248,17 @@ export default function DashboardModals({
                     setEditForm({ ...editForm, email: e.target.value })
                   }
                   placeholder="Enter your email"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl font-semibold focus:outline-none focus:border-[#1CC4B6] text-gray-900"
+                  className={`w-full px-4 py-3 border-2 rounded-lg font-semibold focus:outline-none transition-all ${isDark ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400 focus:border-teal-500' : 'border-[#e8eaf5] focus:border-[#1CC4B6] text-[#3d3f56] bg-[#f5f6fb] placeholder:text-[#9CA3B8]'}`}
                   disabled={editLoading}
                 />
               </div>
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-8">
               <button
                 onClick={handleCloseEditModal}
-                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-full transition-all"
+                className={`flex-1 font-bold py-3 rounded-lg transition-all border-2 ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-sky-400 border-slate-600' : 'bg-[#f5f6fb] hover:bg-[#e8eaf5] text-[#7CA0D8] border-[#e8eaf5]'}`}
                 disabled={editLoading}
               >
                 Cancel
@@ -264,9 +266,9 @@ export default function DashboardModals({
               <button
                 onClick={handleEditProfile}
                 disabled={editLoading}
-                className="flex-1 bg-[#1CC4B6] hover:bg-[#19b0a3] disabled:opacity-60 text-white font-black py-3 rounded-full transition-all"
+                className={`flex-1 disabled:opacity-60 text-white font-black py-3 rounded-lg transition-all shadow-md hover:shadow-lg ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
               >
-                {editLoading ? "Saving..." : "Save"}
+                {editLoading ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
@@ -278,24 +280,24 @@ export default function DashboardModals({
           ============================================ */}
       {showChangePasswordModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-3xl font-black text-[#3d3f56] flex items-center gap-2">
-                <Lock className="w-8 h-8" />
+          <div className={`rounded-2xl p-8 max-w-sm w-full shadow-2xl border-2 max-h-[90vh] overflow-y-auto ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700' : 'bg-white border-[#e8eaf5]'}`}>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className={`text-2xl font-black flex items-center gap-2 ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>
+                <Lock className={`w-6 h-6 ${isDark ? 'text-sky-500' : 'text-[#7CA0D8]'}`} />
                 Change Password
               </h2>
               <button
                 onClick={handleClosePasswordModal}
-                className="text-gray-500 hover:text-black transition-all"
+                className={`transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#3d3f56]'}`}
               >
-                <X className="w-7 h-7" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleChangePassword} className="space-y-4">
+            <form onSubmit={handleChangePassword} className="space-y-5">
               {/* Current Password */}
               <div>
-                <label className="block text-lg font-bold text-black mb-2">
+                <label className={`block text-sm font-black mb-2 ${isDark ? 'text-slate-200' : 'text-[#3d3f56]'}`}>
                   Current Password
                 </label>
                 <div className="relative">
@@ -308,14 +310,15 @@ export default function DashboardModals({
                         currentPassword: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 pr-11 border-2 border-gray-300 rounded-xl font-semibold focus:outline-none focus:border-[#6FA3EF] text-gray-900"
+                    placeholder="Enter current password"
+                    className={`w-full px-4 py-3 pr-11 border-2 rounded-lg font-semibold focus:outline-none transition-all ${isDark ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400 focus:border-teal-500' : 'border-[#e8eaf5] focus:border-[#7CA0D8] text-[#3d3f56] bg-[#f5f6fb] placeholder:text-[#9CA3B8]'}`}
                     disabled={changePasswordLoading}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswordFields(!showPasswordFields)}
-                    className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                    className={`absolute right-3 top-3 transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#7CA0D8]'}`}
                     tabIndex={-1}
                   >
                     {showPasswordFields ? (
@@ -329,7 +332,7 @@ export default function DashboardModals({
 
               {/* New Password */}
               <div>
-                <label className="block text-lg font-bold text-black mb-2">
+                <label className={`block text-sm font-black mb-2 ${isDark ? 'text-slate-200' : 'text-[#3d3f56]'}`}>
                   New Password
                 </label>
                 <div className="relative">
@@ -342,14 +345,15 @@ export default function DashboardModals({
                         newPassword: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 pr-11 border-2 border-gray-300 rounded-xl font-semibold focus:outline-none focus:border-[#6FA3EF] text-gray-900"
+                    placeholder="Enter new password"
+                    className={`w-full px-4 py-3 pr-11 border-2 rounded-lg font-semibold focus:outline-none transition-all ${isDark ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400 focus:border-teal-500' : 'border-[#e8eaf5] focus:border-[#7CA0D8] text-[#3d3f56] bg-[#f5f6fb] placeholder:text-[#9CA3B8]'}`}
                     disabled={changePasswordLoading}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswordFields(!showPasswordFields)}
-                    className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                    className={`absolute right-3 top-3 transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#7CA0D8]'}`}
                     tabIndex={-1}
                   >
                     {showPasswordFields ? (
@@ -363,7 +367,7 @@ export default function DashboardModals({
 
               {/* Confirm New Password */}
               <div>
-                <label className="block text-lg font-bold text-black mb-2">
+                <label className={`block text-sm font-black mb-2 ${isDark ? 'text-slate-200' : 'text-[#3d3f56]'}`}>
                   Confirm New Password
                 </label>
                 <div className="relative">
@@ -376,14 +380,15 @@ export default function DashboardModals({
                         confirmPassword: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 pr-11 border-2 border-gray-300 rounded-xl font-semibold focus:outline-none focus:border-[#6FA3EF] text-gray-900"
+                    placeholder="Confirm new password"
+                    className={`w-full px-4 py-3 pr-11 border-2 rounded-lg font-semibold focus:outline-none transition-all ${isDark ? 'bg-slate-700 border-slate-600 text-slate-100 placeholder:text-slate-400 focus:border-teal-500' : 'border-[#e8eaf5] focus:border-[#7CA0D8] text-[#3d3f56] bg-[#f5f6fb] placeholder:text-[#9CA3B8]'}`}
                     disabled={changePasswordLoading}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswordFields(!showPasswordFields)}
-                    className="absolute right-3 top-3 text-gray-500 hover:text-gray-700"
+                    className={`absolute right-3 top-3 transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-[#9CA3B8] hover:text-[#7CA0D8]'}`}
                     tabIndex={-1}
                   >
                     {showPasswordFields ? (
@@ -399,16 +404,16 @@ export default function DashboardModals({
               <button
                 type="submit"
                 disabled={changePasswordLoading}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:opacity-60 text-white font-black py-3 rounded-full text-lg transition-all"
+                className={`w-full disabled:opacity-60 text-white font-black py-3 rounded-lg transition-all shadow-md hover:shadow-lg ${isDark ? 'bg-sky-600 hover:bg-sky-700' : 'bg-[#7CA0D8] hover:bg-[#6a8ec7]'}`}
               >
-                {changePasswordLoading ? "Updating..." : "Change Password"}
+                {changePasswordLoading ? "Updating..." : "Update Password"}
               </button>
             </form>
 
             {/* Close Button */}
             <button
               onClick={handleClosePasswordModal}
-              className="w-full mt-3 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-full transition-all"
+              className={`w-full mt-3 font-bold py-3 rounded-lg transition-all border-2 ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-300 border-slate-600' : 'bg-[#f5f6fb] hover:bg-[#e8eaf5] text-[#7CA0D8] border-[#e8eaf5]'}`}
               disabled={changePasswordLoading}
             >
               Close

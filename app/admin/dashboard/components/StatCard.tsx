@@ -20,18 +20,21 @@ export default function StatCard({
   return (
     <div
       onClick={onClick}
-      className={`${color} rounded-2xl shadow-lg p-8 text-white transition-all duration-300 ${
+      className={`${color} rounded-2xl shadow-2xl p-8 text-white transition-all duration-300 relative overflow-hidden group ${
         clickable 
-          ? "cursor-pointer hover:shadow-2xl hover:scale-105 hover:translate-y-[-4px] transform" 
+          ? "cursor-pointer hover:shadow-2xl hover:shadow-black/40 hover:scale-105 hover:translate-y-[-4px] transform" 
           : ""
-      }`}
+      } border border-white/10 backdrop-blur-sm`}
     >
-      <div className="flex items-center justify-between">
+      {/* Gradient overlay effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      
+      <div className="flex items-center justify-between relative z-10">
         <div className="flex-1">
-          <p className="text-white/80 text-sm font-semibold mb-3 uppercase tracking-wide">{title}</p>
-          <p className="text-5xl font-bold">{value}</p>
+          <p className="text-white/70 text-xs font-bold mb-3 uppercase tracking-wider letter-spacing-1">{title}</p>
+          <p className="text-6xl font-black bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">{value}</p>
         </div>
-        <div className="bg-white/20 rounded-2xl p-4 backdrop-blur-sm shadow-lg">
+        <div className="bg-white/15 rounded-2xl p-5 backdrop-blur-xl shadow-xl border border-white/20 group-hover:bg-white/20 transition-all duration-300">
           {icon}
         </div>
       </div>

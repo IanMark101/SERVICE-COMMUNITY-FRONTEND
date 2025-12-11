@@ -6,11 +6,12 @@ export default function SidebarItem({ icon, label, active, onClick }:
   return (
     <button 
       onClick={onClick}
-      className={`flex items-center gap-3 w-full p-3 rounded-lg transition-all duration-200 group ${active ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+      className={`flex items-center justify-center gap-3 w-full p-3 rounded-xl border transition-all duration-200 group ${active ? 'bg-slate-800/70 border-sky-500/40 text-slate-50 shadow-lg shadow-sky-500/20' : 'text-slate-300 border-transparent hover:bg-slate-800/60 hover:border-slate-700 hover:text-white'}`}
+      title={label || undefined}
     >
-      <div className={`${active ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>{icon}</div>
-      <span className="font-medium text-sm">{label}</span>
-      {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse" />}
+      <div className={`${active ? 'text-sky-300 drop-shadow' : 'text-slate-400 group-hover:text-white'}`}>{icon}</div>
+      {label && <span className="font-semibold text-sm tracking-tight">{label}</span>}
+      {active && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-sky-300 animate-pulse" />}
     </button>
   );
 }

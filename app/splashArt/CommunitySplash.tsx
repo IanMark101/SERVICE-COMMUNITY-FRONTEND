@@ -6,7 +6,6 @@ export default function CommunitySplash() {
   const router = useRouter();
 
   const handleGetStarted = () => {
-    // ✅ Redirect to user login/signup
     router.push("/auth/login");
   };
 
@@ -19,13 +18,13 @@ export default function CommunitySplash() {
   };
 
   return (
-    <div className="min-h-screen bg-[#EAF6FF] flex items-center justify-center p-6 md:p-12 font-sans">
+    <div className="min-h-screen bg-[#EAF6FF] flex items-center justify-center p-4 sm:p-6 md:p-12 font-sans">
       
       {/* Main Container */}
-      <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
         
         {/* LEFT COLUMN: Text Content */}
-        <div className="flex flex-col items-start space-y-8">
+        <div className="flex flex-col items-start space-y-4 sm:space-y-6 md:space-y-8">
           
           {/* Badge / Logo Group */}
           <div className="bg-white rounded-2xl shadow-sm py-3 px-6 inline-flex items-center gap-4 transform hover:-translate-y-1 transition duration-300">
@@ -44,21 +43,21 @@ export default function CommunitySplash() {
           </div>
 
           {/* Main Heading */}
-          <h1 className="text-5xl md:text-6xl lg:text-[5rem] leading-[1.1] font-black text-[#8FB8FF]">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-[5rem] leading-[1.1] font-black text-[#8FB8FF]">
             COMMUNITY SERVICE
             <br />
             CONNECTOR
           </h1>
 
           {/* Features List */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
+          <div className="space-y-2 sm:space-y-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <CheckmarkIcon />
-              <span className="text-xl md:text-2xl font-bold text-[#9DBBF0]">Finding opportunities</span>
+              <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-[#9DBBF0]">Finding opportunities</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <CheckmarkIcon />
-              <span className="text-xl md:text-2xl font-bold text-[#9DBBF0]">Connecting people</span>
+              <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-[#9DBBF0]">Connecting people</span>
             </div>
           </div>
         </div>
@@ -72,7 +71,7 @@ export default function CommunitySplash() {
           <div className="bg-white rounded-[3rem] shadow-2xl overflow-hidden border-4 border-white transition-transform duration-300 hover:scale-[1.02] cursor-pointer">
             
             {/* Image Area Container */}
-            <div className="relative h-72 md:h-80 bg-[#FFF8E1] w-full flex items-center justify-center overflow-hidden">
+            <div className="relative h-56 sm:h-64 md:h-72 lg:h-80 bg-[#FFF8E1] w-full flex items-center justify-center overflow-hidden">
               {/* UPDATED HERE: 
                   Removed `hover:scale-105 transition duration-700` from the img tag 
               */}
@@ -91,21 +90,21 @@ export default function CommunitySplash() {
             </div>
 
             {/* Card Content Area */}
-            <div className="bg-[#D6E6F8] p-8 text-center flex flex-col items-center gap-6">
-              <p className="text-[#5A7196] text-lg md:text-xl font-bold leading-relaxed max-w-xs">
+            <div className="bg-[#D6E6F8] p-4 sm:p-6 md:p-8 text-center flex flex-col items-center gap-4 sm:gap-6">
+              <p className="text-[#5A7196] text-sm sm:text-base md:text-lg lg:text-xl font-bold leading-relaxed max-w-xs">
                 Linking people who need help with those ready to offer their skills.
               </p>
 
-              <div className="flex gap-4 w-full justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full justify-center">
                 <button 
                   onClick={handleUserLogin}
-                  className="bg-[#448AFF] hover:bg-[#3b7ceb] text-white text-sm font-bold py-3 px-8 rounded shadow-[0_4px_14px_0_rgba(68,138,255,0.39)] transition-all duration-200 active:scale-95 uppercase tracking-wider"
+                  className="bg-[#448AFF] hover:bg-[#3b7ceb] text-white text-xs sm:text-sm font-bold py-2 sm:py-3 px-4 sm:px-8 rounded shadow-[0_4px_14px_0_rgba(68,138,255,0.39)] transition-all duration-200 active:scale-95 uppercase tracking-wider flex-1 sm:flex-none"
                 >
                   User Login
                 </button>
                 <button 
                   onClick={handleAdminLogin}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-3 px-8 rounded shadow-[0_4px_14px_0_rgba(102,51,153,0.39)] transition-all duration-200 active:scale-95 uppercase tracking-wider"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-bold py-2 sm:py-3 px-4 sm:px-8 rounded shadow-[0_4px_14px_0_rgba(102,51,153,0.39)] transition-all duration-200 active:scale-95 uppercase tracking-wider flex-1 sm:flex-none"
                 >
                   Admin Login
                 </button>

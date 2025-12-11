@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, X } from "lucide-react";
+import { useDarkMode } from "@/app/context/DarkModeContext";
 import api from "@/services/api";
 
 interface RatingModalProps {
   isOpen: boolean;
   offerId: string;
   offerTitle: string;
-  offerUserId: string; // ✅ ADD THIS
+  offerUserId: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -17,32 +18,98 @@ export default function RatingModal({
   isOpen,
   offerId,
   offerTitle,
-  offerUserId, // ✅ ADD THIS
+  offerUserId,
   onClose,
   onSuccess,
 }: RatingModalProps) {
+  const { isDark } = useDarkMode();
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [alreadyRated, setAlreadyRated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOwnOffer, setIsOwnOffer] = useState(false);
 
   const currentUserId = localStorage.getItem("user")
     ? JSON.parse(localStorage.getItem("user")!).id
     : null;
 
-  // ✅ ADD THIS CHECK
-  if (isOpen && currentUserId === offerUserId) {
+  // ✅ Check status when modal opens
+  useEffect(() => {
+    if (isOpen && offerId) {
+      checkStatus();
+    }
+  }, [isOpen, offerId]);
+
+  const checkStatus = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Check if own offer
+      if (currentUserId === offerUserId) {
+        setIsOwnOffer(true);
+        return;
+      }
+
+      // Check if already rated
+      const response = await api.get(`/services/check-rating/${offerId}`);
+      setAlreadyRated(response.data.alreadyRated);
+    } catch (err) {
+      console.error("Error checking rating status:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ Show nothing while loading
+  if (!isOpen) return null;
+
+  if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
-          <h2 className="text-3xl font-black text-[#3d3f56] mb-4">
+        <div className={`rounded-3xl p-8 max-w-md w-full shadow-2xl ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800' : 'bg-white'}`}>
+          <p className={`text-center font-semibold ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user is rating their own offer
+  if (isOwnOffer) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className={`rounded-3xl p-8 max-w-md w-full shadow-2xl ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-slate-700' : 'bg-white'}`}>
+          <h2 className={`text-3xl font-black mb-4 ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>
             Cannot Rate
           </h2>
-          <p className="text-gray-600 font-semibold mb-6">
+          <p className={`font-semibold mb-6 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
             You cannot rate your own service offer.
           </p>
           <button
             onClick={onClose}
-            className="w-full bg-[#1CC4B6] hover:bg-[#19b0a3] text-white font-bold py-3 rounded-full transition-all"
+            className={`w-full text-white font-bold py-3 rounded-full transition-all ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Check if already rated
+  if (alreadyRated) {
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className={`rounded-3xl p-8 max-w-md w-full shadow-2xl ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-slate-700' : 'bg-white'}`}>
+          <h2 className={`text-3xl font-black mb-4 ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>
+            Already Rated
+          </h2>
+          <p className={`font-semibold mb-6 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>
+            You have already rated this service. You can only rate it once.
+          </p>
+          <button
+            onClick={onClose}
+            className={`w-full text-white font-bold py-3 rounded-full transition-all ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
           >
             Close
           </button>
@@ -76,28 +143,26 @@ export default function RatingModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">
+      <div className={`rounded-3xl p-8 max-w-md w-full shadow-2xl ${isDark ? 'bg-gradient-to-br from-slate-900 to-slate-800 border-2 border-slate-700' : 'bg-white'}`}>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-black text-[#3d3f56]">Rate Service</h2>
+          <h2 className={`text-3xl font-black ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>Rate Service</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-all"
+            className={`transition-all ${isDark ? 'text-slate-400 hover:text-slate-200' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         <div className="mb-6">
-          <p className="text-gray-600 font-semibold mb-2">Service:</p>
-          <p className="text-xl font-bold text-[#3d3f56]">{offerTitle}</p>
+          <p className={`font-semibold mb-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Service:</p>
+          <p className={`text-xl font-bold ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>{offerTitle}</p>
         </div>
 
         <div className="mb-8">
-          <p className="text-gray-600 font-semibold mb-4">Your Rating:</p>
+          <p className={`font-semibold mb-4 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Your Rating:</p>
           <div className="flex gap-4 justify-center">
             {[1, 2, 3, 4, 5].map((star) => (
               <button
@@ -111,6 +176,8 @@ export default function RatingModal({
                   className={`w-12 h-12 ${
                     star <= (hoveredRating || rating)
                       ? "text-yellow-400 fill-yellow-400"
+                      : isDark
+                      ? "text-slate-600"
                       : "text-gray-300"
                   }`}
                 />
@@ -118,7 +185,7 @@ export default function RatingModal({
             ))}
           </div>
           {rating > 0 && (
-            <p className="text-center mt-4 font-bold text-[#3d3f56]">
+            <p className={`text-center mt-4 font-bold ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>
               {rating} Star{rating !== 1 ? "s" : ""}
             </p>
           )}
@@ -127,14 +194,14 @@ export default function RatingModal({
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold py-3 rounded-full transition-all"
+            className={`flex-1 font-bold py-3 rounded-full transition-all ${isDark ? 'bg-slate-700 hover:bg-slate-600 text-slate-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}
           >
             Cancel
           </button>
           <button
             onClick={handleSubmitRating}
             disabled={isSubmitting || rating === 0}
-            className="flex-1 bg-[#1CC4B6] hover:bg-[#19b0a3] disabled:opacity-50 text-white font-bold py-3 rounded-full transition-all"
+            className={`flex-1 disabled:opacity-50 text-white font-bold py-3 rounded-full transition-all ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
           >
             {isSubmitting ? "Submitting..." : "Submit Rating"}
           </button>

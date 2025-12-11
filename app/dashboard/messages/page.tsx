@@ -8,37 +8,19 @@ declare global {
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Info, MessageCircle, User, Settings, LogOut, Search, Send, Lock, Home, Eye, EyeOff, X, Edit2 } from "lucide-react";
+import { X } from "lucide-react";
 import api from "@/services/api";
-import Link from "next/link";
 import DashboardHeader from "@/app/dashboard/components/DashboardHeader";
 import DashboardModals from "@/app/dashboard/components/DashboardModals";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface Message {
-  id: string;
-  senderId: string;
-  receiverId: string;
-  text: string;
-  createdAt: string;
-  sender: User;
-  receiver: User;
-}
-
-interface Conversation {
-  userId: string;
-  userName: string;
-  lastMessage: string;
-  lastMessageTime: string;
-}
+import LoadingScreen from "@/app/dashboard/components/LoadingScreen";
+import ConversationsList from "./components/ConversationsList";
+import ChatArea from "./components/ChatArea";
+import { useDarkMode } from "@/app/context/DarkModeContext";
+import { Conversation, ConversationUserDetails, Message, User } from "./types";
 
 export default function MessagesPage() {
   const router = useRouter();
+  const { isDark } = useDarkMode();
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,12 +33,18 @@ export default function MessagesPage() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ✅ ADD THESE NEW STATE VARIABLES
+  // Header search state
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // ✅ MODAL STATES
+  // Conversation list search state
+  const [conversationSearchResults, setConversationSearchResults] = useState<User[]>([]);
+  const [conversationSearchLoading, setConversationSearchLoading] = useState(false);
+  const [showConversationSearchResults, setShowConversationSearchResults] = useState(false);
+
+  const [activeConversationUser, setActiveConversationUser] = useState<ConversationUserDetails | null>(null);
+
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
@@ -69,26 +57,34 @@ export default function MessagesPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("userToken");
-    const user = localStorage.getItem("user");
 
-    if (!token || !user) {
+    if (!token) {
       router.push("/auth/login");
       return;
     }
 
-    setCurrentUser(JSON.parse(user));
-    fetchUser().finally(() => setIsLoading(false));
+    // Try to get user from localStorage first
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser));
+      setIsLoading(false);
+    } else {
+      // If no stored user, fetch from API (handles OAuth users)
+      fetchUser();
+    }
   }, [router]);
 
   const fetchUser = async () => {
     try {
       const res = await api.get("/users/me");
       setCurrentUser(res.data);
-      // ✅ UPDATE localStorage so it stays synced
       localStorage.setItem("user", JSON.stringify(res.data));
+      setIsLoading(false);
     } catch (err: any) {
       console.error("Error fetching user:", err);
       setError("Failed to load user");
+      setIsLoading(false);
+      router.push("/auth/login");
     }
   };
 
@@ -113,49 +109,67 @@ export default function MessagesPage() {
         });
       });
 
-      // 2. potential contacts from service offers
-      const categoriesRes = await api.get("/services/categories");
-      const categories = Array.isArray(categoriesRes.data)
-        ? categoriesRes.data
-        : categoriesRes.data?.categories || [];
-
-      for (const category of categories) {
-        try {
-          const offersRes = await api.get(`/services/offers/${category.id}?page=1`);
-          const offers = offersRes.data?.offers || [];
-
-          offers.forEach((offer: any) => {
-            if (offer.user?.id && offer.user.id !== currentUser.id && !conversationMap.has(offer.user.id)) {
-              conversationMap.set(offer.user.id, {
-                userId: offer.user.id,
-                userName: offer.user.name || "Unknown Provider",
-                lastMessage: `Offering: ${offer.title || offer.description || "Service"}`,
-                lastMessageTime: offer.createdAt || new Date().toISOString(),
-              });
-            }
-          });
-        } catch {
-          // ignore categories with no offers
-        }
-      }
-
-      // 3. potential contacts from service requests
+      // 2. fetch all users (not limited by service offerings)
       try {
-        const requestsRes = await api.get("/services/requests?page=1");
-        const requests = requestsRes.data?.requests || requestsRes.data || [];
+        const usersRes = await api.get("/users?page=1&limit=100");
+        const allUsers = usersRes.data?.users || usersRes.data || [];
 
-        requests.forEach((req: any) => {
-          if (req.user?.id && req.user.id !== currentUser.id && !conversationMap.has(req.user.id)) {
-            conversationMap.set(req.user.id, {
-              userId: req.user.id,
-              userName: req.user.name || "Unknown Seeker",
-              lastMessage: `Requesting: ${req.description || "Service"}`,
-              lastMessageTime: req.createdAt || new Date().toISOString(),
+        allUsers.forEach((user: any) => {
+          if (user.id && user.id !== currentUser.id && !conversationMap.has(user.id)) {
+            conversationMap.set(user.id, {
+              userId: user.id,
+              userName: user.name || "Unknown User",
+              lastMessage: "Start a conversation",
+              lastMessageTime: new Date().toISOString(),
             });
           }
         });
       } catch {
-        // ignore if requests endpoint fails
+        // if all users endpoint fails, fallback to service-based users
+        // 2a. potential contacts from service offers
+        const categoriesRes = await api.get("/services/categories");
+        const categories = Array.isArray(categoriesRes.data)
+          ? categoriesRes.data
+          : categoriesRes.data?.categories || [];
+
+        for (const category of categories) {
+          try {
+            const offersRes = await api.get(`/services/offers/${category.id}?page=1`);
+            const offers = offersRes.data?.offers || [];
+
+            offers.forEach((offer: any) => {
+              if (offer.user?.id && offer.user.id !== currentUser.id && !conversationMap.has(offer.user.id)) {
+                conversationMap.set(offer.user.id, {
+                  userId: offer.user.id,
+                  userName: offer.user.name || "Unknown Provider",
+                  lastMessage: `Offering: ${offer.title || offer.description || "Service"}`,
+                  lastMessageTime: offer.createdAt || new Date().toISOString(),
+                });
+              }
+            });
+          } catch {
+            // ignore categories with no offers
+          }
+        }
+
+        // 2b. potential contacts from service requests
+        try {
+          const requestsRes = await api.get("/services/requests?page=1");
+          const requests = requestsRes.data?.requests || requestsRes.data || [];
+
+          requests.forEach((req: any) => {
+            if (req.user?.id && req.user.id !== currentUser.id && !conversationMap.has(req.user.id)) {
+              conversationMap.set(req.user.id, {
+                userId: req.user.id,
+                userName: req.user.name || "Unknown Seeker",
+                lastMessage: `Requesting: ${req.description || "Service"}`,
+                lastMessageTime: req.createdAt || new Date().toISOString(),
+              });
+            }
+          });
+        } catch {
+          // ignore if requests endpoint fails
+        }
       }
 
       // sort newest first
@@ -175,46 +189,90 @@ export default function MessagesPage() {
     try {
       const res = await api.get(`/messages/between?user1Id=${currentUser.id}&user2Id=${otherUserId}`);
       setConversationMessages(res.data || []);
-      setSelectedConversation(otherUserId);
     } catch (err: any) {
       console.error("Error fetching messages:", err);
       setConversationMessages([]);
     }
   };
 
-  // ✅ ADD THIS NEW FUNCTION
-  const handleSearchUsers = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
-    }
-
+  const fetchUsersByQuery = async (query: string) => {
+    if (!query.trim()) return [];
     try {
-      setSearchLoading(true);
-      const res = await api.get(`/users`, {
-        params: {
-          search: query,
-          page: 1,
-          limit: 20
-        }
+      const res = await api.get("/users", {
+        params: { search: query, page: 1, limit: 20 },
       });
-      setSearchResults(res.data.users || res.data || []);
-      setShowSearchResults(true);
+      return res.data.users || res.data || [];
     } catch (err) {
       console.error("Error searching users:", err);
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
+      return [];
     }
   };
 
-  // ✅ ADD THIS NEW FUNCTION
-  const handleStartConversation = (userId: string, userName: string) => {
+  const handleSearchUsers = async (query: string) => {
+    setSearchLoading(true);
+    const results = await fetchUsersByQuery(query);
+    setSearchResults(results);
+    setShowSearchResults(results.length > 0);
+    setSearchLoading(false);
+  };
+
+  const handleConversationSearch = async (query: string) => {
+    setSearchQuery(query);
+    setConversationSearchLoading(true);
+    const results = await fetchUsersByQuery(query);
+    setConversationSearchResults(results);
+    setShowConversationSearchResults(results.length > 0);
+    setConversationSearchLoading(false);
+  };
+
+  const handleConversationResultSelect = (user: User) => {
+    setConversationSearchResults([]);
+    setShowConversationSearchResults(false);
+    setSearchQuery("");
+    handleStartConversation(user.id, {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    });
+  };
+
+  const handleStartConversation = async (userId: string, userDetails?: ConversationUserDetails) => {
     setSelectedConversation(userId);
-    fetchConversationMessages(userId);
     setShowSearchResults(false);
     setSearchResults([]);
+
+    if (userDetails) {
+      setActiveConversationUser(userDetails);
+    } else if (currentUser && currentUser.id === userId) {
+      setActiveConversationUser({
+        id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+      });
+    } else {
+      const existing = conversations.find((conv) => conv.userId === userId);
+      if (existing) {
+        setActiveConversationUser({
+          id: existing.userId,
+          name: existing.userName,
+        });
+      } else {
+        try {
+          const res = await api.get(`/users/${userId}`);
+          const data = res.data;
+          setActiveConversationUser({
+            id: data.id,
+            name: data.name,
+            email: data.email,
+          });
+        } catch (err) {
+          console.error("Error fetching conversation user:", err);
+          setActiveConversationUser(null);
+        }
+      }
+    }
+
+    await fetchConversationMessages(userId);
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -232,14 +290,21 @@ export default function MessagesPage() {
       setConversationMessages([...conversationMessages, res.data]);
       setMessageText("");
 
-      // update conversation preview immediately
+      // update conversation preview immediately and move to top
       setConversations((prev) => {
+        const now = new Date().toISOString();
         const updated = prev.map((conv) =>
           conv.userId === selectedConversation
-            ? { ...conv, lastMessage: messageText, lastMessageTime: new Date().toISOString() }
+            ? { ...conv, lastMessage: messageText, lastMessageTime: now }
             : conv
         );
-        return updated;
+        return updated
+          .map((conv) =>
+            conv.userId === selectedConversation
+              ? { ...conv, lastMessageTime: now }
+              : conv
+          )
+          .sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
       });
     } catch (err: any) {
       console.error("Error sending message:", err);
@@ -284,69 +349,130 @@ export default function MessagesPage() {
   };
 
   useEffect(() => {
+    if (messagesEndRef.current) {
+      const scrollableParent = messagesEndRef.current.parentElement;
+      if (scrollableParent) {
+        setTimeout(() => {
+          scrollableParent.scrollTop = scrollableParent.scrollHeight;
+        }, 0);
+      }
+    }
+  }, [conversationMessages]);
+
+  useEffect(() => {
     if (currentUser) {
       fetchConversations();
     }
   }, [currentUser]);
 
   useEffect(() => {
-    if (!currentUser || !selectedConversation) return;
+    if (!window.Pusher || !currentUser?.id) return;
 
-    const channel = window.Pusher?.subscribe(`messages-${currentUser.id}`);
+    const channel = window.Pusher.subscribe(`messages-${currentUser.id}`);
 
-    channel?.bind("new-message", async (data: any) => {
-      if (data.senderId === selectedConversation) {
-        if (!data.sender) {
+    const handleNewMessage = async (data: any) => {
+      const messageTime = data?.createdAt || new Date().toISOString();
+      const isActiveConversation = data.senderId === selectedConversation;
+
+      let senderDetails = data.sender;
+
+      if (!senderDetails || !senderDetails.name) {
+        if (currentUser && data.senderId === currentUser.id) {
+          senderDetails = {
+            id: currentUser.id,
+            name: currentUser.name,
+            email: currentUser.email,
+          };
+        } else if (activeConversationUser && activeConversationUser.id === data.senderId) {
+          senderDetails = {
+            id: activeConversationUser.id,
+            name: activeConversationUser.name,
+            email: activeConversationUser.email ?? "",
+          };
+        } else {
           try {
             const senderRes = await api.get(`/users/${data.senderId}`);
-            data.sender = senderRes.data;
-          } catch {
-            data.sender = { id: data.senderId, name: "Unknown", email: "" };
+            senderDetails = senderRes.data;
+          } catch (err) {
+            console.error("Error fetching sender details:", err);
+            senderDetails = {
+              id: data.senderId,
+              name: "Unknown",
+              email: "",
+            };
           }
         }
-
-        setConversationMessages((prev) => [...prev, data]);
-
-        setConversations((prev) => {
-          const updated = prev.map((conv) =>
-            conv.userId === data.senderId
-              ? { ...conv, lastMessage: data.text, lastMessageTime: data.createdAt }
-              : conv
-          );
-          return updated;
-        });
       }
-    });
+
+      const messageWithSender = {
+        ...data,
+        createdAt: messageTime,
+        sender: senderDetails,
+      };
+
+      if (isActiveConversation) {
+        setConversationMessages((prev) => [...prev, messageWithSender]);
+      }
+
+      setConversations((prev) => {
+        const existing = prev.find((conv) => conv.userId === data.senderId);
+        const updatedConversation = existing
+          ? { ...existing, lastMessage: data.text, lastMessageTime: messageTime }
+          : {
+              userId: data.senderId,
+              userName: senderDetails?.name || "Unknown",
+              lastMessage: data.text,
+              lastMessageTime: messageTime,
+            };
+
+        const others = prev.filter((conv) => conv.userId !== data.senderId);
+        const merged = [updatedConversation, ...others];
+
+        return merged.sort(
+          (a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime()
+        );
+      });
+    };
+
+    channel.bind("new-message", handleNewMessage);
 
     return () => {
-      channel?.unbind_all();
-      window.Pusher?.unsubscribe(`messages-${currentUser.id}`);
+      channel.unbind("new-message", handleNewMessage);
+      window.Pusher.unsubscribe(`messages-${currentUser.id}`);
     };
-  }, [currentUser, selectedConversation]);
-
-  const formatTime = (date: string) => {
-    return new Date(date).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
+  }, [
+    currentUser?.id,
+    currentUser?.name,
+    currentUser?.email,
+    selectedConversation,
+    activeConversationUser?.id,
+    activeConversationUser?.name,
+    activeConversationUser?.email,
+  ]);
 
   const filteredConversations = conversations.filter((conv) =>
     conv.userName.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const fallbackConversation = selectedConversation
+    ? conversations.find((conv) => conv.userId === selectedConversation)
+    : undefined;
+
+  const conversationDisplayName =
+    activeConversationUser?.name ||
+    fallbackConversation?.userName ||
+    (currentUser && currentUser.id === selectedConversation ? currentUser.name : "");
+
+  const conversationInitial = conversationDisplayName
+    ? conversationDisplayName.charAt(0).toUpperCase()
+    : "?";
+
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#f5f6fb] to-white">
-        <p className="text-[#3d3f56] text-lg font-bold">Loading...</p>
-      </div>
-    );
+    return <LoadingScreen message="Loading your messages..." />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f5f6fb] to-white">
-      {/* ✅ UPDATED HEADER WITH USER SEARCH PROPS */}
+    <div className={`min-h-screen ${isDark ? 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950' : 'bg-gradient-to-br from-[#f5f8fc] via-[#faf9f7] to-[#f0f4f8]'}`}>
       <DashboardHeader 
         onSettingsClick={() => setShowSettingsModal(true)}
         currentPage="messages"
@@ -357,10 +483,9 @@ export default function MessagesPage() {
           setShowSearchResults(false);
         }}
         searchType="users"
-        onSelectUser={handleStartConversation}
+        onSelectUser={(userId, userName) => handleStartConversation(userId, { id: userId, name: userName })}
       />
 
-      {/* ✅ MODALS */}
       <DashboardModals
         showSettingsModal={showSettingsModal}
         setShowSettingsModal={setShowSettingsModal}
@@ -371,175 +496,57 @@ export default function MessagesPage() {
         onLogout={handleLogout}
       />
 
-      {/* MESSAGES CONTENT - REST STAYS THE SAME */}
-      <div className="max-w-7xl mx-auto px-6 py-12">
+      <div className="px-6 lg:px-8 py-8 lg:py-12 w-full">
         <div className="mb-8">
-          <h2 className="text-5xl font-black text-[#3d3f56]">Messages</h2>
-          <p className="text-lg text-[#7CA0D8] font-semibold mt-2">
-            Connect and communicate with service providers & seekers
+          <h2 className={`text-4xl lg:text-5xl font-black mb-2 ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>💬 Messages</h2>
+          <p className={`text-base lg:text-lg font-semibold ${isDark ? 'text-sky-400' : 'text-[#1CC4B6]'}`}>
+            Connect and collaborate with the community
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-2 border-red-300 text-red-700 px-6 py-4 rounded-2xl font-bold mb-6">
+          <div className={`border-2 px-6 py-4 rounded-xl font-bold mb-6 shadow-sm ${
+            isDark
+              ? 'bg-red-950/50 border-red-800 text-red-200'
+              : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200 text-red-700'
+          }`}>
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[700px]">
-          {/* Conversations List */}
-          <div className="lg:col-span-1 bg-white rounded-[2.5rem] shadow-xl border-2 border-gray-200 p-6 flex flex-col">
-            <h3 className="text-2xl font-black text-[#3d3f56] mb-6">
-              {filteredConversations.length} Conversations
-            </h3>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ConversationsList
+            conversations={filteredConversations}
+            selectedConversation={selectedConversation}
+            searchQuery={searchQuery}
+            onSearch={handleConversationSearch}
+            searchResults={conversationSearchResults}
+            showSearchResults={showConversationSearchResults}
+            searchLoading={conversationSearchLoading}
+            onSelectSearchResult={handleConversationResultSelect}
+            onSelectConversation={(userId, userName) =>
+              handleStartConversation(userId, {
+                id: userId,
+                name: userName,
+              })
+            }
+          />
 
-            {filteredConversations.length > 0 ? (
-              <div className="space-y-3 overflow-y-auto flex-1 pr-2">
-                {filteredConversations.map((conv) => (
-                  <button
-                    key={conv.userId}
-                    onClick={() => fetchConversationMessages(conv.userId)}
-                    className={`w-full text-left p-4 rounded-2xl transition-all duration-200 ${
-                      selectedConversation === conv.userId
-                        ? "bg-gradient-to-r from-[#6FA3EF] to-[#5C90DD] text-white shadow-lg border-2 border-[#5C90DD]"
-                        : "bg-gradient-to-br from-gray-50 to-gray-100 text-[#3d3f56] border-2 border-gray-300 hover:border-[#6FA3EF] hover:bg-blue-50"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base flex-shrink-0 ${
-                          selectedConversation === conv.userId
-                            ? "bg-white text-[#6FA3EF]"
-                            : "bg-gradient-to-br from-[#5AC8FA] to-[#007AFF] text-white"
-                        }`}
-                      >
-                        {conv.userName.charAt(0).toUpperCase()}
-                      </div>
-                      <p className={`font-black text-base ${selectedConversation === conv.userId ? "text-white" : "text-[#3d3f56]"}`}>
-                        {conv.userName}
-                      </p>
-                    </div>
-                    <p
-                      className={`text-sm truncate font-bold ${
-                        selectedConversation === conv.userId ? "text-white/80" : "text-[#7CA0D8]"
-                      }`}
-                    >
-                      {conv.lastMessage}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-[#7CA0D8] font-bold text-center">
-                  {searchQuery ? "No conversations found" : "No conversations yet. Start offering or requesting services!"}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Chat Area */}
-          <div className="lg:col-span-2 bg-white rounded-[2.5rem] shadow-xl border-2 border-gray-200 p-6 flex flex-col">
-            {selectedConversation ? (
-              <>
-                {/* Chat Header */}
-                <div className="mb-6 pb-6 border-b-3 border-gray-200">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-gradient-to-br from-[#5AC8FA] to-[#007AFF] rounded-full flex items-center justify-center text-white font-black text-xl">
-                      {conversations.find((c) => c.userId === selectedConversation)?.userName.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <h3 className="text-3xl font-black text-[#3d3f56]">
-                        {conversations.find((c) => c.userId === selectedConversation)?.userName}
-                      </h3>
-                      <p className="text-sm text-[#7CA0D8] font-bold">Online</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Messages Container - FACEBOOK STYLE */}
-                <div className="flex-1 space-y-3 mb-4 overflow-y-auto p-4 bg-gradient-to-b from-[#f0f1f7] to-gray-100 rounded-2xl border-2 border-gray-200">
-                  {conversationMessages.length > 0 ? (
-                    <>
-                      {conversationMessages.map((msg) => (
-                        <div
-                          key={msg.id}
-                          className={`flex gap-2 ${msg.senderId === currentUser?.id ? "justify-end" : "justify-start"}`}
-                        >
-                          {msg.senderId !== currentUser?.id && msg.sender && (
-                            <div className="w-7 h-7 bg-gradient-to-br from-[#5AC8FA] to-[#007AFF] rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-xs">
-                              {msg.sender.name?.charAt(0).toUpperCase() || "?"}
-                            </div>
-                          )}
-                          <div
-                            className={`max-w-xs px-4 py-3 rounded-2xl shadow-md border-2 ${
-                              msg.senderId === currentUser?.id
-                                ? "bg-gradient-to-r from-[#6FA3EF] to-[#5C90DD] text-white border-[#5C90DD]"
-                                : "bg-white text-[#3d3f56] border-gray-300"
-                            }`}
-                          >
-                            <p className={`font-bold text-xs mb-1 ${msg.senderId === currentUser?.id ? "text-white/80" : "text-[#7CA0D8]"}`}>
-                              {msg.sender?.name || "Unknown"}
-                            </p>
-                            <p className="text-sm font-semibold">
-                              {msg.text}
-                            </p>
-                            <p
-                              className={`text-xs mt-2 font-bold ${
-                                msg.senderId === currentUser?.id ? "text-white/60" : "text-[#7CA0D8]"
-                              }`}
-                            >
-                              {formatTime(msg.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                      <div ref={messagesEndRef} />
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <p className="text-[#7CA0D8] font-bold text-center text-sm">
-                        No messages yet. Start the conversation! 👋
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Message Input */}
-                <form onSubmit={handleSendMessage} className="flex gap-3">
-                  <input
-                    type="text"
-                    value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
-                    placeholder="Type your message here..."
-                    className="flex-1 px-6 py-4 border-2 border-gray-300 rounded-full focus:outline-none focus:border-[#6FA3EF] focus:ring-2 focus:ring-[#6FA3EF]/20 text-base font-semibold text-[#3d3f56] placeholder:text-[#7CA0D8] transition-all"
-                  />
-                  <button
-                    type="submit"
-                    disabled={sendingMessage || !messageText.trim()}
-                    className="bg-gradient-to-r from-[#6FA3EF] to-[#5C90DD] hover:from-[#5C90DD] hover:to-[#4A7BC8] disabled:opacity-50 disabled:cursor-not-allowed text-white font-black py-4 px-8 rounded-full transition-all transform hover:scale-105 shadow-lg flex items-center gap-2"
-                  >
-                    <Send className="w-5 h-5" />
-                    {sendingMessage ? "Sending..." : "Send"}
-                  </button>
-                </form>
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full">
-                <MessageCircle className="w-20 h-20 text-[#7CA0D8] mb-4 opacity-50" />
-                <p className="text-[#3d3f56] text-xl font-black text-center">
-                  Select a conversation to start messaging
-                </p>
-                <p className="text-[#7CA0D8] font-semibold mt-2">
-                  Choose from the list on the left
-                </p>
-              </div>
-            )}
-          </div>
+          <ChatArea
+            selectedConversation={selectedConversation}
+            conversationDisplayName={conversationDisplayName}
+            conversationInitial={conversationInitial}
+            conversationMessages={conversationMessages}
+            currentUserId={currentUser?.id}
+            messageText={messageText}
+            onMessageTextChange={(value) => setMessageText(value)}
+            onSendMessage={handleSendMessage}
+            sendingMessage={sendingMessage}
+            messagesEndRef={messagesEndRef}
+          />
         </div>
       </div>
 
-      {/* REPORT MODAL */}
       {showReportModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl">

@@ -1,4 +1,3 @@
-// AdminDashboard.tsx  (dashboard/page.tsx)  –  categories table removed
 "use client";
 
 import { useEffect, useState } from "react";
@@ -13,6 +12,7 @@ import {
   TrendingUp,
   Activity,
   Settings,
+  Lightbulb,
 } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -23,14 +23,17 @@ import UserTable from "./components/userTable";
 import CreateCategoryCard from "./components/CreateCategoryCard";
 import ReportsList from "./components/ReportsList";
 import RequestsList from "./components/RequestsList";
+import OffersList from "./components/OffersList";
+import SuggestionsList from "./components/SuggestionsList";
 import AdminSettingsModal from "./components/AdminSettingsModal";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "users" | "reports" | "categories" | "offers" | "requests" | "settings"
+    "dashboard" | "users" | "reports" | "categories" | "offers" | "requests" | "suggestions" | "settings"
   >("dashboard");
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(false);
 
   const [users, setUsers] = useState<any[]>([]);
   const [reports, setReports] = useState<any[]>([]);
@@ -44,6 +47,7 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<any[]>([]);
   const [allRequests, setAllRequests] = useState<any[]>([]);
   const [allOffers, setAllOffers] = useState<any[]>([]);
+  const [pendingSuggestions, setPendingSuggestions] = useState<number>(0);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -85,7 +89,7 @@ export default function AdminDashboard() {
       // ✅ REMOVED: Don't check token here since useEffect already verified it
       console.log("📡 Fetching admin data...");
 
-      const [usersRes, reportsRes, postsStatsRes, categoriesRes, requestsRes, offersRes, userStatsRes] =
+      const [usersRes, reportsRes, postsStatsRes, categoriesRes, requestsRes, offersRes, userStatsRes, suggestionsRes] =
         await Promise.all([
           api.get("/admin/users"),
           api.get("/admin/reports"),
@@ -94,6 +98,7 @@ export default function AdminDashboard() {
           api.get("/admin/requests"),
           api.get("/admin/offers"),
           api.get("/admin/stats/users"),
+          api.get("/suggestions/pending"),
         ]);
 
       // Extract data
@@ -130,6 +135,13 @@ export default function AdminDashboard() {
       setAllOffers(offersData);
       setCategories(categoriesData);
       setPostStats(postsStatsRes.data || { totalOffers: 0, totalRequests: 0 });
+      
+      // Count pending suggestions
+      const suggestionsData = Array.isArray(suggestionsRes.data) 
+        ? suggestionsRes.data 
+        : (suggestionsRes.data?.suggestions || []);
+      const pendingCount = suggestionsData.filter((s: any) => s.status === "pending").length;
+      setPendingSuggestions(pendingCount);
 
       // Stats handling
       const statsData = userStatsRes.data;
@@ -245,74 +257,117 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 font-sans text-slate-800">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gradient-to-b from-slate-900 to-slate-950 text-white flex-shrink-0 hidden md:flex flex-col shadow-2xl z-20">
-        <div className="p-6 flex items-center gap-3 border-b border-slate-700/50">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-            <LayoutDashboard className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-xl font-bold tracking-tight">
-            Admin<span className="text-blue-400">Panel</span>
-          </span>
-        </div>
+    <div className="relative flex min-h-screen bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b] font-sans text-slate-100 overflow-hidden">
+      {/* Ambient shapes */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-32 -right-28 h-80 w-80 rounded-full bg-sky-500/25 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-48 -left-20 h-96 w-96 rounded-full bg-indigo-600/25 blur-3xl animate-pulse" />
+        <div className="absolute top-1/3 left-1/2 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
+      </div>
 
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+      {/* Sidebar */}
+      <aside className={`relative bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/80 text-white flex-shrink-0 hidden md:flex flex-col shadow-2xl z-20 transition-all duration-300 ${
+        sidebarExpanded ? 'w-64' : 'w-20'
+      }`}>
+        <button
+          onClick={() => setSidebarExpanded(!sidebarExpanded)}
+          className={`p-6 flex items-center gap-3 border-b border-slate-700/60 bg-gradient-to-r from-slate-900/80 to-slate-900/40 hover:bg-slate-800/60 transition-all duration-200 ${!sidebarExpanded && 'justify-center'}`}
+        >
+          <div className="w-11 h-11 bg-gradient-to-br from-sky-500 via-sky-400 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-600/50 border border-white/20 backdrop-blur-xl">
+            <LayoutDashboard className="w-6 h-6 text-white drop-shadow-lg" />
+          </div>
+          {sidebarExpanded && (
+            <span className="text-xl font-black tracking-tight">
+              Admin<span className="text-transparent bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text">Panel</span>
+            </span>
+          )}
+        </button>
+
+        <nav className={`flex-1 p-4 space-y-2 overflow-y-auto ${!sidebarExpanded && 'flex flex-col items-center'}`}>
           <SidebarItem
             icon={<LayoutDashboard size={20} />}
-            label="Dashboard"
+            label={sidebarExpanded ? "Dashboard" : ""}
             active={activeTab === "dashboard"}
-            onClick={() => setActiveTab("dashboard")}
+            onClick={() => {
+              setActiveTab("dashboard");
+            }}
           />
           <SidebarItem
             icon={<Users size={20} />}
-            label="Users"
+            label={sidebarExpanded ? "Users" : ""}
             active={activeTab === "users"}
-            onClick={() => setActiveTab("users")}
+            onClick={() => {
+              setActiveTab("users");
+            }}
           />
           <SidebarItem
             icon={<ShieldAlert size={20} />}
-            label="Reports"
+            label={sidebarExpanded ? "Reports" : ""}
             active={activeTab === "reports"}
-            onClick={() => setActiveTab("reports")}
+            onClick={() => {
+              setActiveTab("reports");
+            }}
           />
           <SidebarItem
             icon={<Tag size={20} />}
-            label="Service Categories"
+            label={sidebarExpanded ? "Service Categories" : ""}
             active={activeTab === "categories"}
-            onClick={() => setActiveTab("categories")}
+            onClick={() => {
+              setActiveTab("categories");
+            }}
+          />
+          <SidebarItem
+            icon={<Lightbulb size={20} />}
+            label={sidebarExpanded ? `Suggestions${pendingSuggestions > 0 ? ` (${pendingSuggestions})` : ""}` : ""}
+            active={activeTab === "suggestions"}
+            onClick={() => {
+              setActiveTab("suggestions");
+            }}
           />
           <SidebarItem
             icon={<Settings size={20} />}
-            label="Settings"
+            label={sidebarExpanded ? "Settings" : ""}
             active={activeTab === "settings"}
-            onClick={() => setActiveTab("settings")}
+            onClick={() => {
+              setActiveTab("settings");
+            }}
           />
         </nav>
 
-        <div className="p-4 border-t border-slate-700/50">
+        <div className={`p-4 border-t border-slate-700/60 bg-gradient-to-t from-slate-900/60 to-transparent ${!sidebarExpanded && 'flex justify-center'}`}>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-3 w-full p-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all duration-200"
+            className={`flex items-center gap-3 p-3 rounded-xl text-slate-300 hover:bg-rose-500/20 hover:text-rose-100 hover:border-rose-400/40 transition-all duration-200 border border-transparent ${sidebarExpanded ? 'w-full' : ''}`}
           >
             <LogOut size={20} />
-            <span>Log Out</span>
+            {sidebarExpanded && <span className="font-semibold">Log Out</span>}
           </button>
         </div>
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="relative flex-1 flex flex-col h-screen overflow-hidden z-10">
         {/* Header */}
-        <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/50 flex items-center justify-between px-6 shadow-sm z-10">
-          <h2 className="text-lg font-bold text-slate-800 capitalize flex items-center gap-2">
-            <Activity size={20} className="text-blue-500" />
-            {activeTab === "categories" ? "Service Categories" : activeTab}
-          </h2>
+        <header className="h-16 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/70 flex items-center justify-between px-6 shadow-lg shadow-black/20 z-10">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarExpanded(!sidebarExpanded)}
+              className="p-2 rounded-lg hover:bg-sky-500/20 text-sky-300 hover:text-sky-100 transition-all border border-slate-800 hover:border-sky-500/40 md:flex hidden"
+              title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+            >
+              <svg className={`w-5 h-5 transition-transform duration-300 ${sidebarExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7m0 0l-7 7m7-7H6" />
+              </svg>
+            </button>
+            <h2 className="text-lg font-bold text-slate-50 capitalize flex items-center gap-2">
+              <Activity size={20} className="text-sky-400" />
+              <span className="bg-gradient-to-r from-slate-50 to-slate-300 bg-clip-text text-transparent">{activeTab === "categories" ? "Service Categories" : activeTab}</span>
+            </h2>
+          </div>
           <button
             onClick={fetchData}
             disabled={isLoading}
-            className={`p-2 rounded-full hover:bg-slate-100 text-slate-500 transition-all ${
+            className={`p-2 rounded-full hover:bg-sky-500/20 text-sky-300 hover:text-sky-100 transition-all border border-slate-800 hover:border-sky-500/40 ${
               isLoading ? "animate-spin" : ""
             }`}
             title="Refresh Data"
@@ -321,11 +376,11 @@ export default function AdminDashboard() {
           </button>
         </header>
 
-        <div className="flex-1 overflow-auto p-6 md:p-8 space-y-8">
+        <div className="flex-1 overflow-auto p-6 md:p-8 space-y-8 bg-gradient-to-b from-white/0 via-white/0 to-white/0">
           {error && (
-            <div className="bg-red-50/80 backdrop-blur-sm border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-md flex items-center justify-between">
-              <p className="font-medium">{error}</p>
-              <button onClick={() => setError("")} className="text-red-500 hover:text-red-700 font-bold text-xl">
+            <div className="bg-rose-500/15 backdrop-blur-sm border border-rose-500/50 text-rose-50 p-4 rounded-xl shadow-lg shadow-rose-600/20 flex items-center justify-between">
+              <p className="font-semibold text-sm">{error}</p>
+              <button onClick={() => setError("")} className="text-rose-200 hover:text-rose-100 font-bold text-lg">
                 ✕
               </button>
             </div>
@@ -340,14 +395,14 @@ export default function AdminDashboard() {
                   title="Total Users"
                   value={typeof userStats === 'number' ? userStats.toString() : "0"}
                   icon={<Users size={28} className="text-white" />}
-                  color="bg-gradient-to-br from-blue-500 to-blue-600"
+                  color="bg-gradient-to-br from-cyan-500 via-blue-500 to-blue-600"
                   clickable={false}
                 />
                 <StatCard
                   title="Total Offers"
                   value={postStats?.totalOffers?.toString() || "0"}
                   icon={<TrendingUp size={28} className="text-white" />}
-                  color="bg-gradient-to-br from-indigo-500 to-indigo-600"
+                  color="bg-gradient-to-br from-purple-500 via-indigo-500 to-indigo-600"
                   onClick={() => setActiveTab("offers")}
                   clickable={true}
                 />
@@ -355,7 +410,7 @@ export default function AdminDashboard() {
                   title="Total Requests"
                   value={postStats?.totalRequests?.toString() || "0"}
                   icon={<Activity size={28} className="text-white" />}
-                  color="bg-gradient-to-br from-violet-500 to-violet-600"
+                  color="bg-gradient-to-br from-violet-500 via-purple-500 to-purple-600"
                   onClick={() => setActiveTab("requests")}
                   clickable={true}
                 />
@@ -363,7 +418,7 @@ export default function AdminDashboard() {
                   title="Active Reports"
                   value={reports?.length?.toString() || "0"}
                   icon={<ShieldAlert size={28} className="text-white" />}
-                  color="bg-gradient-to-br from-rose-500 to-rose-600"
+                  color="bg-gradient-to-br from-rose-500 via-red-500 to-red-600"
                   onClick={() => setActiveTab("reports")}
                   clickable={true}
                 />
@@ -372,10 +427,10 @@ export default function AdminDashboard() {
               {/* Charts Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* User Status Distribution Pie Chart */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-slate-100/50 hover:shadow-2xl transition-all duration-300">
+                <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70 hover:shadow-sky-500/10 transition-all duration-300 group">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1.5 h-8 bg-gradient-to-b from-emerald-500 to-green-600 rounded-full"></div>
-                    <h3 className="font-bold text-slate-800 text-lg">User Status Distribution</h3>
+                    <div className="w-1.5 h-8 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/30"></div>
+                    <h3 className="font-bold text-slate-50 text-lg">User Status Distribution</h3>
                   </div>
                   {userStatusDistribution.length > 0 && userStatusDistribution.some(item => item.value > 0) ? (
                     <ResponsiveContainer width="100%" height={300}>
@@ -396,42 +451,50 @@ export default function AdminDashboard() {
                         </Pie>
                         <Tooltip 
                           contentStyle={{
-                            backgroundColor: "#1e293b",
-                            border: "1px solid #475569",
+                            backgroundColor: "#ffffff",
+                            border: "2px solid #0ea5e9",
                             borderRadius: "12px",
-                            boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
+                            boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+                            color: "#0f172a",
+                            padding: "12px 16px",
+                            fontWeight: "600",
+                            fontSize: "14px"
                           }}
-                          labelStyle={{ color: "#f1f5f9" }}
+                          labelStyle={{ color: "#0f172a", fontWeight: "bold", fontSize: "15px" }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-slate-400 bg-slate-50 rounded-xl">
-                      <p>No user data available</p>
+                    <div className="h-[300px] flex items-center justify-center text-slate-400/70 bg-slate-800/40 rounded-xl border border-slate-800">
+                      <p className="text-sm">No user data available</p>
                     </div>
                   )}
                 </div>
 
                 {/* New Users Trend Bar Chart */}
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-slate-100/50 hover:shadow-2xl transition-all duration-300">
+                <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70 hover:shadow-indigo-500/10 transition-all duration-300 group">
                   <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1.5 h-8 bg-gradient-to-b from-blue-500 to-cyan-600 rounded-full"></div>
-                    <h3 className="font-bold text-slate-800 text-lg">New Users Trend (7 Days)</h3>
+                    <div className="w-1.5 h-8 bg-gradient-to-b from-sky-500 to-indigo-600 rounded-full shadow-lg shadow-sky-500/30"></div>
+                    <h3 className="font-bold text-slate-50 text-lg">New Users Trend (7 Days)</h3>
                   </div>
                   {newUsersTrend.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={newUsersTrend} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" radius={8} />
-                        <XAxis dataKey="date" stroke="#64748b" style={{ fontSize: "12px" }} />
-                        <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" radius={8} />
+                        <XAxis dataKey="date" stroke="#cbd5f5" style={{ fontSize: "12px", color: "#cbd5f5" }} />
+                        <YAxis stroke="#cbd5f5" style={{ fontSize: "12px", color: "#cbd5f5" }} />
                         <Tooltip 
                           contentStyle={{ 
-                            backgroundColor: "#1e293b", 
-                            border: "1px solid #475569",
+                            backgroundColor: "#ffffff", 
+                            border: "2px solid #3b82f6",
                             borderRadius: "12px",
-                            boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
+                            boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+                            color: "#0f172a",
+                            padding: "12px 16px",
+                            fontWeight: "600",
+                            fontSize: "14px"
                           }}
-                          labelStyle={{ color: "#f1f5f9" }}
+                          labelStyle={{ color: "#0f172a", fontWeight: "bold", fontSize: "15px" }}
                           cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
                         />
                         <Legend wrapperStyle={{ paddingTop: "20px" }} />
@@ -445,24 +508,24 @@ export default function AdminDashboard() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-slate-400 bg-slate-50 rounded-xl">
-                      <p>No trend data available</p>
+                    <div className="h-[300px] flex items-center justify-center text-slate-400/70 bg-slate-800/40 rounded-xl border border-slate-800">
+                      <p className="text-sm">No trend data available</p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Recent Users Table */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-slate-100/50">
+              <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full"></div>
-                  <h3 className="font-bold text-slate-800 text-lg">Recent Users</h3>
+                  <div className="w-1.5 h-8 bg-gradient-to-b from-purple-500 to-pink-600 rounded-full shadow-lg shadow-purple-500/30"></div>
+                  <h3 className="font-bold text-slate-50 text-lg">Recent Users</h3>
                 </div>
                 {Array.isArray(users) && users.length > 0 ? (
                   <UserTable users={users.slice(0, 10)} isLoading={isLoading} toggleBanUser={toggleBanUser} />
                 ) : (
-                  <div className="text-center py-8 text-slate-400">
-                    <p>No users found</p>
+                  <div className="text-center py-8 text-slate-400/70">
+                    <p className="text-sm">No users found</p>
                   </div>
                 )}
               </div>
@@ -470,26 +533,26 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === "users" && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-slate-100/50">
+            <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70">
               <UserTable users={users} isLoading={isLoading} toggleBanUser={toggleBanUser} />
             </div>
           )}
 
           {activeTab === "reports" && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-slate-100/50">
+            <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70">
               <ReportsList reports={reports} isLoading={isLoading} refreshReports={fetchData} />
             </div>
           )}
 
           {activeTab === "requests" && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-slate-100/50">
+            <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70">
               <RequestsList requests={allRequests} isLoading={isLoading} />
             </div>
           )}
 
           {activeTab === "offers" && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-slate-100/50">
-              <RequestsList requests={allOffers} isLoading={isLoading} />
+            <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70">
+              <OffersList offers={allOffers} isLoading={isLoading} />
             </div>
           )}
 
@@ -500,16 +563,24 @@ export default function AdminDashboard() {
             />
           )}
 
+          {activeTab === "suggestions" && (
+            <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70">
+              <SuggestionsList isLoading={isLoading} refreshSuggestions={fetchData} />
+            </div>
+          )}
+
           {activeTab === "settings" && (
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 border border-slate-100/50 text-center">
+            <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70 text-center">
               <div className="flex items-center justify-center mb-6">
-                <Settings className="w-12 h-12 text-blue-500" />
+                <div className="p-4 bg-gradient-to-br from-sky-500 to-indigo-500 rounded-2xl shadow-lg shadow-sky-500/40">
+                  <Settings className="w-12 h-12 text-white" />
+                </div>
               </div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-2">Admin Settings</h2>
-              <p className="text-slate-600 mb-6">Manage your admin account settings</p>
+              <h2 className="text-2xl font-bold text-slate-50 mb-2">Admin Settings</h2>
+              <p className="text-slate-300 mb-8">Manage your admin account settings and preferences</p>
               <button
                 onClick={() => setShowSettingsModal(true)}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-all shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-sky-500 via-sky-400 to-indigo-500 hover:from-sky-400 hover:via-sky-300 hover:to-indigo-400 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-sky-500/40 hover:shadow-indigo-500/40 border border-white/20"
               >
                 Open Settings
               </button>
