@@ -9,6 +9,8 @@ import DashboardHeader from "../components/DashboardHeader";
 import DashboardModals from "../components/DashboardModals";
 import LoadingScreen from "../components/LoadingScreen";
 import { useDarkMode } from "@/app/context/DarkModeContext";
+import { useLogout } from "@/hooks/useLogout";
+import { useToast } from "../components/Toast";
 
 interface User {
   id: string;
@@ -51,6 +53,8 @@ type Tab = "info" | "offers" | "requests" | "ratings";
 export default function ProfilePage() {
   const router = useRouter();
   const { isDark } = useDarkMode();
+  const { logout } = useLogout();
+  const { showToast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("info");
   const [isLoading, setIsLoading] = useState(true);
@@ -201,7 +205,7 @@ export default function ProfilePage() {
     try {
       await api.delete(`/services/offer/${offerId}`);
       fetchMyOffers(offersPage);
-      alert("Offer deleted!");
+      showToast("Offer deleted!", "success");
     } catch (err) {
       console.error("Error deleting offer:", err);
     }
@@ -212,7 +216,7 @@ export default function ProfilePage() {
     try {
       await api.delete(`/services/request/${requestId}`);
       fetchMyRequests(requestsPage);
-      alert("Request deleted!");
+      showToast("Request deleted!", "success");
     } catch (err) {
       console.error("Error deleting request:", err);
     }
@@ -231,12 +235,12 @@ export default function ProfilePage() {
     if (!editingOffer) return;
     try {
       await api.patch(`/services/offer/${editingOffer.id}`, editOfferForm);
-      alert("Offer updated!");
+      showToast("Offer updated!", "success");
       setEditingOffer(null);
       fetchMyOffers(offersPage);
     } catch (err: any) {
       console.error("Error updating offer:", err);
-      alert(err.response?.data?.message || "Failed to update offer");
+      showToast(err.response?.data?.message || "Failed to update offer", "error");
     }
   };
 
@@ -254,12 +258,12 @@ export default function ProfilePage() {
       await api.patch(`/services/request/${editingRequest.id}`, {
         description: editRequestForm.description,
       });
-      alert("Request updated!");
+      showToast("Request updated!", "success");
       setEditingRequest(null);
       fetchMyRequests(requestsPage);
     } catch (err: any) {
       console.error("Error updating request:", err);
-      alert(err.response?.data?.message || "Failed to update request");
+      showToast(err.response?.data?.message || "Failed to update request", "error");
     }
   };
 
@@ -291,10 +295,8 @@ export default function ProfilePage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("user");
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    await logout(false); // false = user logout (not admin)
   };
 
   if (isLoading || !user) {
@@ -308,13 +310,14 @@ export default function ProfilePage() {
         onSettingsClick={() => setShowSettingsModal(true)}
         currentPage="profile"
         onSearch={handleSearchUsers}
-        searchResults={searchResults}
+        searchResults={searchResults.map(u => ({ ...u, type: "user" as const }))}
         showSearchResults={showSearchResults}
         onSelectResult={() => {
           setSearchQuery("");
           setShowSearchResults(false);
         }}
         searchType="users"
+        searchLoading={searchLoading}
       />
 
       {/* DASHBOARD MODALS */}

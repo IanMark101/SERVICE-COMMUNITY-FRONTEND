@@ -37,11 +37,10 @@ api.interceptors.response.use(
   (error) => {
     if (typeof window !== "undefined") {
       const status = error.response?.status;
+      const path = window.location.pathname;
 
-      // 🔴 handle 401 (unauthorized) AND 403 (banned)
-      if (status === 401 || status === 403) {
-        const path = window.location.pathname;
-
+      // 🔴 handle 401 (unauthorized) - auto redirect
+      if (status === 401) {
         if (path.startsWith("/admin")) {
           localStorage.removeItem("adminToken");
           localStorage.removeItem("adminUser");
@@ -52,6 +51,15 @@ api.interceptors.response.use(
           window.location.href = "/auth/login";
         }
       }
+      
+      // 🚫 403 (forbidden/banned) - DON'T auto redirect for dashboard
+      // Let the dashboard handle it with the ban modal
+      if (status === 403 && path.startsWith("/admin")) {
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("adminUser");
+        window.location.href = "/admin/login";
+      }
+      // For dashboard 403, just reject - let component handle ban modal
     }
     return Promise.reject(error);
   }

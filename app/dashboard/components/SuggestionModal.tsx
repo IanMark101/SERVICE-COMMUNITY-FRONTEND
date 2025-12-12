@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, Lightbulb } from "lucide-react";
 import { useDarkMode } from "@/app/context/DarkModeContext";
 import api from "@/services/api";
+import { useToast } from "./Toast";
 
 interface SuggestionModalProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export default function SuggestionModal({
   onSuccess,
 }: SuggestionModalProps) {
   const { isDark } = useDarkMode();
+  const { showToast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,7 +57,7 @@ export default function SuggestionModal({
         description: description.trim(),
       });
 
-      alert("✅ Suggestion submitted successfully! Thank you for your feedback.");
+      showToast("Suggestion submitted successfully! Thank you for your feedback.", "success");
       setTitle("");
       setDescription("");
       setErrors({});
@@ -63,7 +65,7 @@ export default function SuggestionModal({
       onClose();
     } catch (err: any) {
       const message = err.response?.data?.message || "Failed to submit suggestion";
-      alert(`❌ ${message}`);
+      showToast(message, "error");
     } finally {
       setIsSubmitting(false);
     }

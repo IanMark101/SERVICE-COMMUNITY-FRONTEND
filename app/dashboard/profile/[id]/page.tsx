@@ -5,9 +5,11 @@ import { useRouter, useParams } from "next/navigation";
 import api from "@/services/api";
 import { Star, Briefcase, FileText, Flag, MessageCircle, X } from "lucide-react";
 import { useDarkMode } from "@/app/context/DarkModeContext";
+import { useLogout } from "@/hooks/useLogout";
 import DashboardHeader from "../../components/DashboardHeader";
 import DashboardModals from "../../components/DashboardModals";
 import LoadingScreen from "../../components/LoadingScreen";
+import { useToast } from "../../components/Toast";
 
 interface UserProfile {
   id: string;
@@ -49,10 +51,12 @@ export default function UserProfilePage() {
   const router = useRouter();
   const params = useParams();
   const { isDark } = useDarkMode();
+  const { showToast } = useToast();
   const userId = params.id as string;
 
   const [user, setUser] = useState<UserProfile | null>(null);
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const { logout } = useLogout();
   const [activeTab, setActiveTab] = useState<Tab>("info");
   const [isLoading, setIsLoading] = useState(true);
   const [userRating, setUserRating] = useState({ avgRating: 0, totalRatings: 0 });
@@ -180,12 +184,12 @@ export default function UserProfilePage() {
     if (!user) return;
 
     if (!reportReason.trim()) {
-      alert("Please provide a reason for the report.");
+      showToast("Please provide a reason for the report.", "warning");
       return;
     }
 
     if (reportReason.length < 10) {
-      alert("Reason must be at least 10 characters");
+      showToast("Reason must be at least 10 characters", "warning");
       return;
     }
 
@@ -195,12 +199,12 @@ export default function UserProfilePage() {
         reportedId: user.id,
         reason: reportReason.trim(),
       });
-      alert("Report submitted successfully!");
+      showToast("Report submitted successfully!", "success");
       setReportReason("");
       setShowReportModal(false);
     } catch (err: any) {
       console.error("Error submitting report:", err);
-      alert(err.response?.data?.message || "Failed to submit report");
+      showToast(err.response?.data?.message || "Failed to submit report", "error");
     } finally {
       setReportLoading(false);
     }
@@ -245,10 +249,10 @@ export default function UserProfilePage() {
     try {
       await api.delete(`/services/offer/${offerId}`);
       setOffers(offers.filter((o) => o.id !== offerId));
-      alert("Offer deleted!");
+      showToast("Offer deleted!", "success");
     } catch (err) {
       console.error("Error deleting offer:", err);
-      alert("Failed to delete offer");
+      showToast("Failed to delete offer", "error");
     }
   };
 
@@ -257,10 +261,10 @@ export default function UserProfilePage() {
     try {
       await api.delete(`/services/request/${requestId}`);
       setRequests(requests.filter((r) => r.id !== requestId));
-      alert("Request deleted!");
+      showToast("Request deleted!", "success");
     } catch (err) {
       console.error("Error deleting request:", err);
-      alert("Failed to delete request");
+      showToast("Failed to delete request", "error");
     }
   };
 
@@ -277,13 +281,13 @@ export default function UserProfilePage() {
     if (!editingOffer) return;
     try {
       await api.patch(`/services/offer/${editingOffer.id}`, editOfferForm);
-      alert("Offer updated!");
+      showToast("Offer updated!", "success");
       setEditingOffer(null);
       // Update local state
       setOffers(offers.map((o) => o.id === editingOffer.id ? { ...o, ...editOfferForm } : o));
     } catch (err: any) {
       console.error("Error updating offer:", err);
-      alert(err.response?.data?.message || "Failed to update offer");
+      showToast(err.response?.data?.message || "Failed to update offer", "error");
     }
   };
 
@@ -301,20 +305,18 @@ export default function UserProfilePage() {
       await api.patch(`/services/request/${editingRequest.id}`, {
         description: editRequestForm.description,
       });
-      alert("Request updated!");
+      showToast("Request updated!", "success");
       setEditingRequest(null);
       // Update local state
       setRequests(requests.map((r) => r.id === editingRequest.id ? { ...r, ...editRequestForm } : r));
     } catch (err: any) {
       console.error("Error updating request:", err);
-      alert(err.response?.data?.message || "Failed to update request");
+      showToast(err.response?.data?.message || "Failed to update request", "error");
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("user");
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    await logout(false); // false = user logout (not admin)
   };
 
   // ✅ CHECK IF VIEWING OWN PROFILE
@@ -331,13 +333,14 @@ export default function UserProfilePage() {
         onSettingsClick={() => setShowSettingsModal(true)}
         currentPage="profile"
         onSearch={handleSearchUsers}
-        searchResults={searchResults}
+        searchResults={searchResults.map(u => ({ ...u, type: "user" as const }))}
         showSearchResults={showSearchResults}
         onSelectResult={() => {
           setSearchQuery("");
           setShowSearchResults(false);
         }}
         searchType="users"
+        searchLoading={searchLoading}
       />
 
       {/* DASHBOARD MODALS */}

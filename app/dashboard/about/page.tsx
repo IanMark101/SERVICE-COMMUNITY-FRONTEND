@@ -5,20 +5,53 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DashboardHeader from "@/app/dashboard/components/DashboardHeader";
 import DashboardModals from "@/app/dashboard/components/DashboardModals";
-import api from "@/services/api";
 import { useDarkMode } from "@/app/context/DarkModeContext";
+import { useLogout } from "@/hooks/useLogout";
+import api from "@/services/api";
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
 
 export default function About() {
   const router = useRouter();
   const { isDark } = useDarkMode();
+  const { logout } = useLogout();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("user");
-    router.push("/auth/login");
+  // Search state
+  const [searchResults, setSearchResults] = useState<User[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  const handleSearchUsers = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    try {
+      setSearchLoading(true);
+      const res = await api.get(`/users`, {
+        params: { search: query, page: 1, limit: 10 }
+      });
+      setSearchResults(res.data.users || res.data || []);
+      setShowSearchResults(true);
+    } catch (err) {
+      console.error("Error searching users:", err);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout(false); // false = user logout (not admin)
   };
 
   return (
@@ -27,6 +60,12 @@ export default function About() {
       <DashboardHeader 
         onSettingsClick={() => setShowSettingsModal(true)}
         currentPage="about"
+        onSearch={handleSearchUsers}
+        searchResults={searchResults.map(u => ({ ...u, type: "user" as const }))}
+        showSearchResults={showSearchResults}
+        onSelectResult={() => setShowSearchResults(false)}
+        searchType="users"
+        searchLoading={searchLoading}
       />
 
       {/* ✅ MODALS */}

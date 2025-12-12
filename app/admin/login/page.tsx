@@ -69,20 +69,22 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden ${
+    <div className={`min-h-screen w-full flex justify-center items-start md:items-center relative overflow-x-hidden py-8 sm:py-12 ${
       isDark
         ? 'bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b]'
         : 'bg-gradient-to-br from-[#EBF4FF] to-[#90CDF4]'
     }`}>
       {/* Background shapes */}
-      <div className={`absolute top-[-15%] right-[-10%] w-96 h-96 rounded-full opacity-20 blur-3xl ${
-        isDark ? 'bg-indigo-600' : 'bg-[#7CA0D8]'
-      }`}></div>
-      <div className={`absolute bottom-[-15%] left-[-10%] w-[28rem] h-[28rem] rounded-full opacity-20 blur-3xl ${
-        isDark ? 'bg-sky-500' : 'bg-[#5AC8FA]'
-      }`}></div>
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className={`absolute top-[-15%] right-[-10%] w-96 h-96 rounded-full opacity-20 blur-3xl ${
+          isDark ? 'bg-indigo-600' : 'bg-[#7CA0D8]'
+        }`}></div>
+        <div className={`absolute bottom-[-15%] left-[-10%] w-[28rem] h-[28rem] rounded-full opacity-20 blur-3xl ${
+          isDark ? 'bg-sky-500' : 'bg-[#5AC8FA]'
+        }`}></div>
+      </div>
 
-      <div className="relative w-full max-w-md px-6 z-10">
+      <div className="relative w-full max-w-md px-5 sm:px-6 z-10">
         {/* Logo / brand */}
         <div className="flex flex-row items-center justify-center gap-3 mb-8">
           <div className="w-16 h-16 bg-gradient-to-b from-indigo-500 to-sky-500 rounded-2xl flex items-center justify-center text-white font-black text-4xl shadow-2xl border border-white/10">
@@ -95,7 +97,7 @@ export default function AdminLoginPage() {
         </div>
 
         {/* Card */}
-        <div className={`backdrop-blur-xl rounded-[2.2rem] shadow-2xl p-9 relative ${
+        <div className={`backdrop-blur-xl rounded-[2.2rem] shadow-2xl p-7 sm:p-9 relative ${
           isDark
             ? 'bg-slate-900/80 border border-slate-700/60'
             : 'bg-white border border-white/50'
@@ -107,7 +109,7 @@ export default function AdminLoginPage() {
           </div>
 
           <div className="text-center mb-7">
-            <h1 className={`text-3xl font-black ${isDark ? 'text-slate-50' : 'text-[#3d3f56]'}`}>Admin Console</h1>
+            <h1 className={`text-3xl sm:text-4xl font-black ${isDark ? 'text-slate-50' : 'text-[#3d3f56]'}`}>Admin Console</h1>
             <p className={`font-semibold mt-2 text-sm ${isDark ? 'text-slate-400' : 'text-[#7CA0D8]'}`}>
               Sign in with administrator credentials
             </p>

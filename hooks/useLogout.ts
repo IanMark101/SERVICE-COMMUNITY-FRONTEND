@@ -4,7 +4,7 @@ import api from "@/services/api";
 
 export function useLogout() {
   const router = useRouter();
-  const { stopHeartbeat, setPresence } = usePresence();
+  const { stopHeartbeat, setPresence, markOffline } = usePresence();
 
   const logout = async (isAdmin: boolean = false, onLogoutComplete?: () => void | Promise<void>) => {
     let logoutResponse = null;
@@ -24,7 +24,17 @@ export function useLogout() {
       // Continue with local logout even if API fails
     }
 
-    // 🟢 Stop heartbeat immediately
+    // 🟢 Explicitly mark offline for regular users before stopping heartbeat
+    if (!isAdmin) {
+      try {
+        console.log("📴 Marking user offline before logout");
+        await markOffline();
+      } catch (offlineErr) {
+        console.warn("⚠️ Failed to mark user offline explicitly:", offlineErr);
+      }
+    }
+
+    // 🟢 Stop heartbeat immediately (noop if already stopped by markOffline)
     console.log("⏹️ Stopping heartbeat");
     stopHeartbeat();
 

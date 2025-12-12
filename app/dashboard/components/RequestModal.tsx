@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 import api from "@/services/api";
+import { useToast } from "./Toast";
 
 interface Category {
   id: string;
@@ -17,6 +18,7 @@ interface RequestModalProps {
 }
 
 export default function RequestModal({ isOpen, categories, onClose, onSuccess }: RequestModalProps) {
+  const { showToast } = useToast();
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,7 @@ export default function RequestModal({ isOpen, categories, onClose, onSuccess }:
       setDescription("");
       setCategoryId("");
       setError("");
-      alert("✅ Service request posted successfully!");
+      showToast("Service request posted successfully!", "success");
       onSuccess();
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to create request");

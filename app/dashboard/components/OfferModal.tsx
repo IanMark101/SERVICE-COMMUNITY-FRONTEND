@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useState } from "react";
 import api from "@/services/api";
+import { useToast } from "./Toast";
 
 interface Category {
   id: string;
@@ -16,6 +17,7 @@ interface OfferModalProps {
 }
 
 export default function OfferModal({ isOpen, categories, onClose }: OfferModalProps) {
+  const { showToast } = useToast();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -36,7 +38,7 @@ export default function OfferModal({ isOpen, categories, onClose }: OfferModalPr
       setDescription("");
       setCategoryId("");
       setError("");
-      alert("✅ Service offer created successfully!");
+      showToast("Service offer created successfully!", "success");
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to create offer");

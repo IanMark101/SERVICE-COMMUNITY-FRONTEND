@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,18 +27,23 @@ import OfferModal from "./components/OfferModal";
 import ContactModal from "./components/ContactModal";
 import SettingsModals from "./components/SettingsModals";
 import SuggestionModal from "./components/SuggestionModal";
+import { useToast } from "./components/Toast";
 import { useDarkMode } from "@/app/context/DarkModeContext";
 import { useLogout } from "@/hooks/useLogout";
 
 interface Category { id: string; name: string; createdAt: string }
 interface User { id: string; name: string; email: string }
-interface Offer { id: string; title: string; description: string; user: User; ratings: any[]; active: boolean; createdAt: string }
-interface ServiceRequest { id: string; description: string; user: User; active: boolean; createdAt: string }
+interface Offer { id: string; title: string; description: string; user: User; ratings: any[]; active: boolean; createdAt: string; category?: Category }
+interface ServiceRequest { id: string; description: string; user: User; active: boolean; createdAt: string; category?: Category }
 interface SearchResult {
   id: string;
   name: string;
   email?: string;
-  type: "user" | "service";
+  description?: string;
+  type: "user" | "category" | "offer" | "request";
+  categoryId?: string;
+  categoryName?: string;
+  userName?: string;
 }
 
 const ITEMS_PER_PAGE = 4;
@@ -81,6 +86,10 @@ export default function Dashboard() {
   const [contactModal, setContactModal] = useState<{ show: boolean; userId: string; userName: string }>({ show: false, userId: "", userName: "" });
   const [ratingModal, setRatingModal] = useState<{ isOpen: boolean; offerId: string; offerTitle: string; offerUserId: string } | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [bannedModalOpen, setBannedModalOpen] = useState(false);
+  const [banCountdown, setBanCountdown] = useState(5);
+  const banLogoutTriggeredRef = useRef(false);
+  const banCheckStartedRef = useRef(false);
 
   useEffect(() => {
     const userToken = localStorage.getItem("userToken");
@@ -88,18 +97,73 @@ export default function Dashboard() {
       router.push("/auth/login");
       return;
     }
-    loadInitialData();
+    
+    // Only load initial data once
+    if (!banCheckStartedRef.current) {
+      banCheckStartedRef.current = true;
+      loadInitialData();
+    }
   }, [router]);
+
+  // 🔍 Separate effect for ban checking interval
+  useEffect(() => {
+    // Don't start interval if modal is already open
+    if (bannedModalOpen) return;
+
+    const banCheckInterval = setInterval(async () => {
+      if (bannedModalOpen || banLogoutTriggeredRef.current) return;
+      
+      try {
+        const userRes = await api.get("/users/me");
+        if (userRes.data?.banned || userRes.data?.isBanned) {
+          console.warn("🚫 USER BANNED - Showing warning for 5 seconds");
+          setBannedModalOpen(true);
+          setBanCountdown(5);
+          banLogoutTriggeredRef.current = false;
+        }
+      } catch (err: any) {
+        // If 403 Forbidden, user is likely banned
+        if (err.response?.status === 403 && !banLogoutTriggeredRef.current) {
+          console.warn("🚫 ACCESS FORBIDDEN - User banned");
+          setBannedModalOpen(true);
+          setBanCountdown(5);
+          banLogoutTriggeredRef.current = false;
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(banCheckInterval);
+  }, [bannedModalOpen]);
 
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
       // Fetch current user
       const userRes = await api.get("/users/me");
+      
+      // 🚫 Check if user is banned on initial load
+      if (userRes.data?.banned || userRes.data?.isBanned) {
+        console.warn("🚫 USER BANNED on initial load - Showing warning");
+        setBannedModalOpen(true);
+        setBanCountdown(5);
+        banLogoutTriggeredRef.current = false;
+        setIsLoading(false);
+        return; // Don't continue loading data
+      }
+      
       setCurrentUserId(userRes.data?.id);
       
       await fetchCategories();
-    } catch (err) {
+    } catch (err: any) {
+      // 🚫 Handle 403 (banned) - show modal instead of error
+      if (err.response?.status === 403) {
+        console.warn("🚫 USER BANNED (403) on initial load - Showing warning");
+        setBannedModalOpen(true);
+        setBanCountdown(5);
+        banLogoutTriggeredRef.current = false;
+        setIsLoading(false);
+        return;
+      }
       console.error("Error loading dashboard:", err);
       setError("Failed to load dashboard data");
     } finally {
@@ -149,41 +213,133 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ FIXED SEARCH - Only searches USERS and hides dropdown when cleared
-  const handleUnifiedSearch = async (query: string) => {
+  // Debounce timer ref for search
+  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ OPTIMIZED SEARCH - Fast with debouncing and parallel API calls
+  const handleUnifiedSearch = (query: string) => {
     setSearchQuery(query);
     
-    // ✅ Clear results immediately when input is empty
+    // Clear results immediately when input is empty
     if (!query.trim()) {
       setSearchResults([]);
       setShowSearchResults(false);
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
       return;
     }
 
-    try {
-      setSearchLoading(true);
-      
-      // Search for users ONLY
-      const usersRes = await api.get(`/users`, {
-        params: { search: query, page: 1, limit: 10 }
-      }).catch(() => ({ data: { users: [] } }));
+    // Show loading immediately
+    setSearchLoading(true);
+    setShowSearchResults(true);
 
-      const users = (usersRes.data.users || []).map((user: any) => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        type: "user" as const
-      }));
+    // Debounce the actual search (300ms)
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
 
-      setSearchResults(users);
-      // ✅ Only show dropdown if there are actual results
-      setShowSearchResults(users.length > 0);
-    } catch (err) {
-      console.error("Error searching:", err);
-      setSearchResults([]);
-      setShowSearchResults(false);
-    } finally {
-      setSearchLoading(false);
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const lowerQuery = query.toLowerCase();
+        
+        // 1. INSTANT: Search categories locally (no API call)
+        const matchingCategories: SearchResult[] = categories
+          .filter(cat => cat.name.toLowerCase().includes(lowerQuery))
+          .slice(0, 5)
+          .map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            type: "category" as const
+          }));
+
+        // Show categories immediately while other searches load
+        if (matchingCategories.length > 0) {
+          setSearchResults(matchingCategories);
+        }
+
+        // 2. PARALLEL API calls for users, offers, and requests
+        const [usersRes, ...offerResults] = await Promise.all([
+          // Search users
+          api.get(`/users`, { params: { search: query, page: 1, limit: 5 } })
+            .catch(() => ({ data: { users: [] } })),
+          // Search offers in first 3 categories in parallel
+          ...categories.slice(0, 3).map(cat =>
+            api.get(`/services/offers/${cat.id}`, { params: { page: 1, limit: 5 } })
+              .then(res => ({ categoryId: cat.id, categoryName: cat.name, offers: res.data.offers || [] }))
+              .catch(() => ({ categoryId: cat.id, categoryName: cat.name, offers: [] }))
+          )
+        ]);
+
+        // Process users
+        const users: SearchResult[] = (usersRes.data.users || usersRes.data || [])
+          .slice(0, 5)
+          .map((user: any) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            type: "user" as const
+          }));
+
+        // Process offers from all categories
+        const matchingOffers: SearchResult[] = offerResults
+          .flatMap((result: any) => 
+            (result.offers || [])
+              .filter((offer: any) => 
+                offer.title?.toLowerCase().includes(lowerQuery) ||
+                offer.description?.toLowerCase().includes(lowerQuery)
+              )
+              .slice(0, 2)
+              .map((offer: any) => ({
+                id: offer.id,
+                name: offer.title,
+                description: offer.description?.slice(0, 60) + (offer.description?.length > 60 ? "..." : ""),
+                type: "offer" as const,
+                categoryId: result.categoryId,
+                categoryName: result.categoryName,
+                userName: offer.user?.name
+              }))
+          )
+          .slice(0, 5);
+
+        // Combine all results - categories first, then offers, then users
+        const allResults = [
+          ...matchingCategories,
+          ...matchingOffers,
+          ...users
+        ];
+
+        setSearchResults(allResults);
+        setShowSearchResults(allResults.length > 0);
+      } catch (err) {
+        console.error("Error searching:", err);
+        setSearchResults([]);
+        setShowSearchResults(false);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300); // 300ms debounce
+  };
+
+  // Handle selecting a search result
+  const handleSearchResultSelect = (result: SearchResult) => {
+    setShowSearchResults(false);
+    setSearchQuery("");
+    
+    if (result.type === "user") {
+      router.push(`/dashboard/profile/${result.id}`);
+    } else if (result.type === "category") {
+      // Navigate to category offers
+      fetchOffers(result.id, 1);
+      setSelectedSeekerCategory(null);
+    } else if (result.type === "offer" && result.categoryId) {
+      // Navigate to category offers
+      fetchOffers(result.categoryId, 1);
+      setSelectedSeekerCategory(null);
+    } else if (result.type === "request" && result.categoryId) {
+      // Navigate to category requests/seekers
+      fetchSeekersByCategory(result.categoryId, 1);
+      setSelectedCategory(null);
     }
   };
 
@@ -219,10 +375,37 @@ export default function Dashboard() {
     }
   };
 
+  const handleBannedLogout = useCallback(async () => {
+    if (banLogoutTriggeredRef.current) return;
+    banLogoutTriggeredRef.current = true;
+    console.log("🚫 Banned user logout initiated");
+    localStorage.removeItem("userToken");
+    localStorage.removeItem("user");
+    window.location.href = "/auth/login?banned=true";
+  }, []);
+
   const handleLogout = async () => {
     console.log("🚪 User logout initiated");
     await logout(false); // false = user logout (not admin)
   };
+
+  // 🚫 Countdown timer for ban modal
+  useEffect(() => {
+    if (!bannedModalOpen) return;
+
+    const interval = setInterval(() => {
+      setBanCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          handleBannedLogout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [bannedModalOpen, handleBannedLogout]);
 
   // Components
   const CategoryCard = ({ cat, onClick, isSeeker = false }: any) => (
@@ -247,7 +430,7 @@ export default function Dashboard() {
   );
 
   const PaginationControls = ({ currentPage, totalPages, onPrevious, onNext, onPageChange }: { currentPage: number; totalPages: number; onPrevious: () => void; onNext: () => void; onPageChange: (page: number) => void }) => (
-    <div className="flex items-center justify-center gap-3 mt-10">
+    <div className="flex flex-wrap items-center justify-center gap-3 gap-y-4 mt-10">
       <button onClick={onPrevious} disabled={currentPage === 1} className={`flex items-center gap-2 border-2 font-bold py-2.5 px-4 rounded-full shadow-sm hover:shadow-md transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed ${
         isDark
           ? 'bg-slate-800 border-slate-700 hover:border-sky-500 text-slate-100'
@@ -407,7 +590,15 @@ export default function Dashboard() {
         onSearch={handleUnifiedSearch}
         searchResults={searchResults}
         showSearchResults={showSearchResults}
-        searchType="users"
+        searchType="services"
+        searchLoading={searchLoading}
+        onSelectResult={(result) => {
+          if (result && result.type) {
+            handleSearchResultSelect(result as SearchResult);
+          } else {
+            setShowSearchResults(false);
+          }
+        }}
       />
 
       <div className="h-6"></div>
@@ -443,7 +634,7 @@ export default function Dashboard() {
           <p className="text-lg text-white font-semibold">
             Connect with trusted helpers in your community
           </p>
-          <div className="pt-4 flex flex-col sm:flex-row gap-4">
+          <div className="pt-4 flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-5 justify-center sm:justify-start">
             <button
               onClick={() => setShowOfferModal(true)}
               className={`hover:scale-105 active:scale-95 font-black py-4 px-10 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-3 text-lg flex-1 sm:flex-initial ${
@@ -493,7 +684,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className={`max-w-7xl mx-auto px-6 py-12 space-y-12`}>
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-12 space-y-12`}>
         {error && (
           <div className={`border-2 px-6 py-4 rounded-lg font-semibold ${
             isDark
@@ -511,7 +702,7 @@ export default function Dashboard() {
               Available Services
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {getPaginatedCategories().map((cat) => (
                 <CategoryCard key={cat.id} cat={cat} onClick={() => fetchOffers(cat.id, 1)} />
               ))}
@@ -562,7 +753,7 @@ export default function Dashboard() {
                 <p className={`text-lg font-semibold ${isDark ? 'text-slate-400' : 'text-[#9CA3B8]'}`}>Loading amazing offers...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {offers.length > 0 ? offers.map((offer) => <OfferCard key={offer.id} offer={offer} />) : (
                   <div className={`col-span-full flex flex-col items-center justify-center py-12 space-y-4 rounded-2xl border-2 border-dashed ${
                     isDark
@@ -596,7 +787,7 @@ export default function Dashboard() {
               Service Requests
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {getPaginatedCategories().map((cat) => (
                 <CategoryCard key={cat.id} cat={cat} onClick={() => fetchSeekersByCategory(cat.id)} isSeeker />
               ))}
@@ -646,7 +837,7 @@ export default function Dashboard() {
                 <p className={`text-lg font-semibold ${isDark ? 'text-slate-400' : 'text-[#9CA3B8]'}`}>Loading service requests...</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {seekersByCategory.length > 0 ? seekersByCategory.map((req) => <SeekerCard key={req.id} req={req} />) : (
                   <div className={`col-span-full flex flex-col items-center justify-center py-12 space-y-4 rounded-2xl border-2 border-dashed ${
                     isDark
@@ -681,6 +872,55 @@ export default function Dashboard() {
       <SettingsModals showSettings={showSettingsModal} showEditProfile={showEditProfileModal} showChangePassword={showChangePasswordModal} onCloseSettings={() => setShowSettingsModal(false)} onCloseEditProfile={() => setShowEditProfileModal(false)} onCloseChangePassword={() => setShowChangePasswordModal(false)} onEditProfileClick={() => { setShowSettingsModal(false); setShowEditProfileModal(true); }} onChangePasswordClick={() => { setShowSettingsModal(false); setShowChangePasswordModal(true); }} onLogout={handleLogout} />
       {ratingModal && <RatingModal isOpen={ratingModal.isOpen} offerId={ratingModal.offerId} offerTitle={ratingModal.offerTitle} offerUserId={ratingModal.offerUserId} onClose={() => setRatingModal(null)} onSuccess={() => setRatingModal(null)} />}
       <SuggestionModal isOpen={showSuggestionModal} onClose={() => setShowSuggestionModal(false)} onSuccess={fetchCategories} />
+
+      {/* 🚫 BANNED MODAL */}
+      {bannedModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className={`${isDark ? 'bg-slate-900' : 'bg-white'} rounded-3xl shadow-2xl max-w-md mx-4 overflow-hidden border-2 ${isDark ? 'border-red-500/40' : 'border-red-200'}`}>
+            <div className={`p-8 text-center space-y-6 ${isDark ? 'bg-gradient-to-br from-red-950/50 to-slate-900' : 'bg-red-50'}`}>
+              <div className="flex justify-center">
+                <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center animate-pulse">
+                  <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2M5.586 2h12.828c1.1 0 2 .9 2 2v15.172c0 1.1-.9 2-2 2H5.586c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2z" />
+                  </svg>
+                </div>
+              </div>
+              
+              <div>
+                <h2 className={`text-2xl font-black ${isDark ? 'text-red-400' : 'text-red-700'}`}>Account Suspended</h2>
+                <p className={`text-sm mt-2 ${isDark ? 'text-slate-300' : 'text-gray-600'}`}>Your account has been banned by administrators. Access has been revoked.</p>
+              </div>
+
+              <div className={`p-4 rounded-2xl ${isDark ? 'bg-slate-800/50' : 'bg-red-100'}`}>
+                <p className={`text-sm font-semibold ${isDark ? 'text-slate-200' : 'text-red-900'}`}>Reason: Policy Violation</p>
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-red-700'}`}>Please contact support for more information.</p>
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="flex items-center justify-center space-x-2">
+                <div className={`flex items-center justify-center w-16 h-16 rounded-2xl font-black text-2xl ${
+                  isDark 
+                    ? 'bg-red-500/20 text-red-400 border-2 border-red-500/40' 
+                    : 'bg-red-200 text-red-700 border-2 border-red-400'
+                }`}>
+                  {banCountdown}
+                </div>
+                <div className={`text-sm font-semibold ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>
+                  Logging out in<br/>
+                  <span className={isDark ? 'text-red-400' : 'text-red-600'}>seconds</span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleBannedLogout}
+                className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition-all shadow-lg"
+              >
+                Logout Now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

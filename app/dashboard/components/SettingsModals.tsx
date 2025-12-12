@@ -4,6 +4,7 @@ import { X, LogOut, Lock, Eye, EyeOff } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useDarkMode } from "@/app/context/DarkModeContext";
 import api from "@/services/api";
+import { useToast } from "./Toast";
 
 interface SettingsModalsProps {
   showSettings: boolean;
@@ -29,6 +30,7 @@ export default function SettingsModals({
   onLogout,
 }: SettingsModalsProps) {
   const { isDark } = useDarkMode();
+  const { showToast } = useToast();
   const [editForm, setEditForm] = useState({ name: "", email: "" });
   const [editLoading, setEditLoading] = useState(false);
 
@@ -49,7 +51,7 @@ export default function SettingsModals({
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editForm.name || !editForm.email) {
-      alert("Please fill all fields");
+      showToast("Please fill all fields", "warning");
       return;
     }
 
@@ -60,10 +62,10 @@ export default function SettingsModals({
       user.name = editForm.name;
       user.email = editForm.email;
       localStorage.setItem("user", JSON.stringify(user));
-      alert("✅ Profile updated successfully!");
+      showToast("Profile updated successfully!", "success");
       onCloseEditProfile();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to update profile");
+      showToast(err.response?.data?.message || "Failed to update profile", "error");
     } finally {
       setEditLoading(false);
     }
@@ -72,15 +74,15 @@ export default function SettingsModals({
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      alert("Please fill all fields");
+      showToast("Please fill all fields", "warning");
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      alert("New passwords do not match");
+      showToast("New passwords do not match", "warning");
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      alert("Password must be at least 6 characters");
+    if (passwordForm.newPassword.length < 8) {
+      showToast("Password must be at least 8 characters", "warning");
       return;
     }
 
@@ -90,11 +92,11 @@ export default function SettingsModals({
         currentPassword: passwordForm.currentPassword,
         password: passwordForm.newPassword,
       });
-      alert("✅ Password changed successfully!");
+      showToast("Password changed successfully!", "success");
       setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
       onCloseChangePassword();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to change password");
+      showToast(err.response?.data?.message || "Failed to change password", "error");
     } finally {
       setPasswordLoading(false);
     }

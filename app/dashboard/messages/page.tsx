@@ -16,11 +16,15 @@ import LoadingScreen from "@/app/dashboard/components/LoadingScreen";
 import ConversationsList from "./components/ConversationsList";
 import ChatArea from "./components/ChatArea";
 import { useDarkMode } from "@/app/context/DarkModeContext";
+import { useLogout } from "@/hooks/useLogout";
 import { Conversation, ConversationUserDetails, Message, User } from "./types";
+import { useToast } from "../components/Toast";
 
 export default function MessagesPage() {
   const router = useRouter();
   const { isDark } = useDarkMode();
+  const { logout } = useLogout();
+  const { showToast } = useToast();
 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -314,20 +318,18 @@ export default function MessagesPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("user");
-    router.push("/auth/login");
+  const handleLogout = async () => {
+    await logout(false); // false = user logout (not admin)
   };
 
   const handleSubmitReport = async () => {
     if (!reportForm.reportedName || !reportForm.reason.trim()) {
-      alert("Please enter a user name and provide a reason");
+      showToast("Please enter a user name and provide a reason", "warning");
       return;
     }
 
     if (reportForm.reason.length < 10) {
-      alert("Reason must be at least 10 characters");
+      showToast("Reason must be at least 10 characters", "warning");
       return;
     }
 
@@ -337,12 +339,12 @@ export default function MessagesPage() {
         reportedName: reportForm.reportedName,
         reason: reportForm.reason,
       });
-      alert("✅ Report submitted successfully! Thank you for helping keep our community safe.");
+      showToast("Report submitted successfully! Thank you for helping keep our community safe.", "success");
       setReportForm({ reportedName: "", reason: "" });
       setShowReportModal(false);
     } catch (err: any) {
       console.error("Error submitting report:", err);
-      alert(err.response?.data?.message || "Failed to submit report");
+      showToast(err.response?.data?.message || "Failed to submit report", "error");
     } finally {
       setReportLoading(false);
     }
@@ -477,12 +479,13 @@ export default function MessagesPage() {
         onSettingsClick={() => setShowSettingsModal(true)}
         currentPage="messages"
         onSearch={handleSearchUsers}
-        searchResults={searchResults}
+        searchResults={searchResults.map(u => ({ ...u, type: "user" as const }))}
         showSearchResults={showSearchResults}
         onSelectResult={() => {
           setShowSearchResults(false);
         }}
         searchType="users"
+        searchLoading={searchLoading}
         onSelectUser={(userId, userName) => handleStartConversation(userId, { id: userId, name: userName })}
       />
 

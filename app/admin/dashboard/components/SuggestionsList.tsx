@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { AlertCircle, Check, X, Loader2, Lightbulb, Trash2, User, Calendar } from "lucide-react";
 import api from "@/services/api";
+import { useToast } from "@/app/dashboard/components/Toast";
 
 interface Suggestion {
   id: string;
@@ -23,6 +24,7 @@ interface SuggestionsListProps {
 }
 
 export default function SuggestionsList({ isLoading: parentIsLoading = false, refreshSuggestions }: SuggestionsListProps) {
+  const { showToast } = useToast();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -55,11 +57,11 @@ export default function SuggestionsList({ isLoading: parentIsLoading = false, re
     setProcessingId(id);
     try {
       await api.post(`/suggestions/${id}/approve`);
-      alert("✅ Suggestion approved! Service category created.");
+      showToast("Suggestion approved! Service category created.", "success");
       await fetchSuggestions();
       refreshSuggestions?.();
     } catch (err: any) {
-      alert(`❌ Error: ${err.response?.data?.message || "Failed to approve"}`);
+      showToast(err.response?.data?.message || "Failed to approve", "error");
     } finally {
       setProcessingId(null);
     }
@@ -69,10 +71,10 @@ export default function SuggestionsList({ isLoading: parentIsLoading = false, re
     setProcessingId(id);
     try {
       await api.post(`/suggestions/${id}/reject`);
-      alert("✅ Suggestion rejected.");
+      showToast("Suggestion rejected.", "success");
       await fetchSuggestions();
     } catch (err: any) {
-      alert(`❌ Error: ${err.response?.data?.message || "Failed to reject"}`);
+      showToast(err.response?.data?.message || "Failed to reject", "error");
     } finally {
       setProcessingId(null);
     }
@@ -86,15 +88,15 @@ export default function SuggestionsList({ isLoading: parentIsLoading = false, re
     setProcessingId(id);
     try {
       await api.delete(`/suggestions/${id}`);
-      let message = "✅ Suggestion deleted.";
+      let message = "Suggestion deleted.";
       if (status === "approved") {
-        message = "✅ Suggestion and service category deleted.";
+        message = "Suggestion and service category deleted.";
       }
-      alert(message);
+      showToast(message, "success");
       await fetchSuggestions();
       refreshSuggestions?.();
     } catch (err: any) {
-      alert(`❌ Error: ${err.response?.data?.message || "Failed to delete"}`);
+      showToast(err.response?.data?.message || "Failed to delete", "error");
     } finally {
       setProcessingId(null);
     }

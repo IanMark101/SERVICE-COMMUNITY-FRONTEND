@@ -446,91 +446,143 @@ export default function AdminDashboard() {
               {/* Charts Section */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* User Status Distribution Pie Chart */}
-                <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70 hover:shadow-sky-500/10 transition-all duration-300 group">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1.5 h-8 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/30"></div>
-                    <h3 className="font-bold text-slate-50 text-lg">User Status Distribution</h3>
-                  </div>
-                  {userStatusDistribution.length > 0 && userStatusDistribution.some(item => item.value > 0) ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie
-                          data={userStatusDistribution}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, value }) => `${name}: ${value}`}
-                          outerRadius={90}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
-                          {userStatusDistribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          contentStyle={{
-                            backgroundColor: "#ffffff",
-                            border: "2px solid #0ea5e9",
-                            borderRadius: "12px",
-                            boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
-                            color: "#0f172a",
-                            padding: "12px 16px",
-                            fontWeight: "600",
-                            fontSize: "14px"
-                          }}
-                          labelStyle={{ color: "#0f172a", fontWeight: "bold", fontSize: "15px" }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center text-slate-400/70 bg-slate-800/40 rounded-xl border border-slate-800">
-                      <p className="text-sm">No user data available</p>
+                <div className="relative bg-gradient-to-br from-slate-800/80 via-slate-900/80 to-slate-950/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/60 p-8 border border-slate-700/50 hover:shadow-emerald-500/20 transition-all duration-300 group overflow-hidden">
+                  {/* Background accent */}
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-7">
+                      <div className="w-1.5 h-8 bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/40"></div>
+                      <div>
+                        <h3 className="font-bold text-slate-50 text-lg tracking-tight">User Status Distribution</h3>
+                        <p className="text-xs text-slate-400 mt-1">Active vs Suspended Accounts</p>
+                      </div>
                     </div>
-                  )}
+                    {userStatusDistribution.length > 0 && userStatusDistribution.some(item => item.value > 0) ? (
+                      <div className="space-y-6">
+                        <ResponsiveContainer width="100%" height={320}>
+                          <PieChart>
+                            <Pie
+                              data={userStatusDistribution}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={false}
+                              label={({ name, value, percent }: any) => `${name}\n${value} (${percent ? (percent * 100).toFixed(0) : 0}%)`}
+                              outerRadius={110}
+                              innerRadius={60}
+                              fill="#8884d8"
+                              dataKey="value"
+                              animationDuration={600}
+                            >
+                              {userStatusDistribution.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip 
+                              contentStyle={{
+                                backgroundColor: "#0f172a",
+                                border: "3px solid #10b981",
+                                borderRadius: "16px",
+                                boxShadow: "0 25px 70px rgba(16, 185, 129, 0.3)",
+                                color: "#ffffff",
+                                padding: "16px 20px",
+                                fontWeight: "700",
+                                fontSize: "14px"
+                              }}
+                              labelStyle={{ color: "#10b981", fontWeight: "bold", fontSize: "15px" }}
+                              formatter={(value: any) => [`${value} users`, "Count"]}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        
+                        {/* Legend with clear stats */}
+                        <div className="grid grid-cols-2 gap-4 mt-6">
+                          {userStatusDistribution.map((item, idx) => (
+                            <div key={idx} className="bg-slate-900/50 border border-slate-700/60 rounded-2xl p-4 flex items-center gap-3 hover:bg-slate-800/70 transition-all">
+                              <div className="w-4 h-4 rounded-lg flex-shrink-0" style={{ backgroundColor: item.color }}></div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-slate-200">{item.name}</p>
+                                <p className="text-lg font-bold text-slate-50">{item.value}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-[320px] flex items-center justify-center text-slate-400/70 bg-slate-800/30 rounded-2xl border border-slate-700/40">
+                        <p className="text-sm font-medium">No user data available</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* New Users Trend Bar Chart */}
-                <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70 hover:shadow-indigo-500/10 transition-all duration-300 group">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1.5 h-8 bg-gradient-to-b from-sky-500 to-indigo-600 rounded-full shadow-lg shadow-sky-500/30"></div>
-                    <h3 className="font-bold text-slate-50 text-lg">New Users Trend (7 Days)</h3>
-                  </div>
-                  {newUsersTrend.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={newUsersTrend} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" radius={8} />
-                        <XAxis dataKey="date" stroke="#cbd5f5" style={{ fontSize: "12px", color: "#cbd5f5" }} />
-                        <YAxis stroke="#cbd5f5" style={{ fontSize: "12px", color: "#cbd5f5" }} />
-                        <Tooltip 
-                          contentStyle={{ 
-                            backgroundColor: "#ffffff", 
-                            border: "2px solid #3b82f6",
-                            borderRadius: "12px",
-                            boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
-                            color: "#0f172a",
-                            padding: "12px 16px",
-                            fontWeight: "600",
-                            fontSize: "14px"
-                          }}
-                          labelStyle={{ color: "#0f172a", fontWeight: "bold", fontSize: "15px" }}
-                          cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
-                        />
-                        <Legend wrapperStyle={{ paddingTop: "20px" }} />
-                        <Bar 
-                          dataKey="count" 
-                          fill="#3b82f6" 
-                          name="New Users" 
-                          radius={[12, 12, 0, 0]}
-                          animationDuration={800}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center text-slate-400/70 bg-slate-800/40 rounded-xl border border-slate-800">
-                      <p className="text-sm">No trend data available</p>
+                <div className="relative bg-gradient-to-br from-slate-800/80 via-slate-900/80 to-slate-950/80 backdrop-blur-xl rounded-3xl shadow-2xl shadow-black/60 p-8 border border-slate-700/50 hover:shadow-sky-500/20 transition-all duration-300 group overflow-hidden">
+                  {/* Background accent */}
+                  <div className="absolute -top-20 -right-20 w-40 h-40 bg-sky-500/10 rounded-full blur-3xl"></div>
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 mb-7">
+                      <div className="w-1.5 h-8 bg-gradient-to-b from-sky-400 via-sky-500 to-indigo-600 rounded-full shadow-lg shadow-sky-500/40"></div>
+                      <div>
+                        <h3 className="font-bold text-slate-50 text-lg tracking-tight">New Users Trend</h3>
+                        <p className="text-xs text-slate-400 mt-1">Last 7 Days</p>
+                      </div>
                     </div>
-                  )}
+                    {newUsersTrend.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={320}>
+                        <BarChart data={newUsersTrend} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
+                          <CartesianGrid strokeDasharray="4 4" stroke="#334155" radius={8} />
+                          <XAxis 
+                            dataKey="date" 
+                            stroke="#94a3b8" 
+                            style={{ fontSize: "12px", color: "#cbd5f5", fontWeight: "500" }}
+                            tick={{ fill: "#cbd5f5" }}
+                          />
+                          <YAxis 
+                            stroke="#94a3b8" 
+                            style={{ fontSize: "12px", color: "#cbd5f5", fontWeight: "500" }}
+                            tick={{ fill: "#cbd5f5" }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: "#1e293b",
+                              border: "2px solid #0ea5e9",
+                              borderRadius: "14px",
+                              boxShadow: "0 20px 60px rgba(0,0,0,0.4)",
+                              color: "#ffffff",
+                              padding: "14px 18px",
+                              fontWeight: "600",
+                              fontSize: "13px"
+                            }}
+                            labelStyle={{ color: "#f0f9ff", fontWeight: "bold", fontSize: "14px" }}
+                            cursor={{ fill: "rgba(6, 182, 212, 0.1)" }}
+                          />
+                          <Legend 
+                            wrapperStyle={{ paddingTop: "20px" }}
+                            iconType="line"
+                          />
+                          <Bar 
+                            dataKey="count" 
+                            fill="url(#gradientBar)" 
+                            name="New Users" 
+                            radius={[14, 14, 0, 0]}
+                            animationDuration={600}
+                          />
+                          <defs>
+                            <linearGradient id="gradientBar" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#06b6d4" stopOpacity={1} />
+                              <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.8} />
+                            </linearGradient>
+                          </defs>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <div className="h-[320px] flex items-center justify-center text-slate-400/70 bg-slate-800/30 rounded-2xl border border-slate-700/40">
+                        <p className="text-sm font-medium">No trend data available</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

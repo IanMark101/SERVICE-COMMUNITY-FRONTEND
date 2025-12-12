@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Settings, Home, Info, MessageCircle, User, Menu, X, Moon, Sun } from "lucide-react";
+import { Search, Settings, Home, Info, MessageCircle, User, Menu, X, Moon, Sun, Folder, Briefcase, HandHelping, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDarkMode } from "@/app/context/DarkModeContext";
@@ -10,18 +10,23 @@ interface SearchResult {
   id: string;
   name: string;
   email?: string;
-  type: "user";
+  description?: string;
+  type?: "user" | "category" | "offer" | "request";
+  categoryId?: string;
+  categoryName?: string;
+  userName?: string;
 }
 
 interface DashboardHeaderProps {
   onSettingsClick: () => void;
   currentPage?: "home" | "about" | "messages" | "profile";
   onSearch?: (query: string) => void;
-  searchResults?: any[];
+  searchResults?: (SearchResult | { id: string; name: string; email?: string })[];
   showSearchResults?: boolean;
-  onSelectResult?: () => void;
+  onSelectResult?: (result?: SearchResult) => void;
   searchType?: "services" | "users";
   onSelectUser?: (userId: string, userName: string) => void;
+  searchLoading?: boolean;
 }
 
 export default function DashboardHeader({ 
@@ -32,7 +37,8 @@ export default function DashboardHeader({
   showSearchResults = false,
   onSelectResult,
   searchType = "services",
-  onSelectUser
+  onSelectUser,
+  searchLoading = false
 }: DashboardHeaderProps) {
   const router = useRouter();
   const { isDark, toggleDarkMode } = useDarkMode();
@@ -49,7 +55,7 @@ export default function DashboardHeader({
   const getPlaceholder = () => {
     if (searchType === "users" && currentPage === "messages") return "Search users";
     if (searchType === "users") return "Search Users";
-    return "Search Services";
+    return "Search services, categories, or users...";
   };
 
   const handleSelectUser = (userId: string, userName: string) => {
@@ -68,11 +74,106 @@ export default function DashboardHeader({
     router.push(`/dashboard/profile/${userId}`);
   };
 
+  const handleResultClick = (result: SearchResult) => {
+    setSearchQuery("");
+    setMobileMenuOpen(false);
+    
+    // For user search type, always navigate to profile
+    if (searchType === "users" || !result.type || result.type === "user") {
+      router.push(`/dashboard/profile/${result.id}`);
+    }
+    
+    // Call the parent callback for any additional handling
+    if (onSelectResult) onSelectResult(result);
+  };
+
+  // Helper to get icon and color for result type
+  const getResultTypeStyles = (type?: SearchResult["type"]) => {
+    switch (type) {
+      case "category":
+        return {
+          icon: <Folder className="w-5 h-5" />,
+          bgColor: "from-purple-500 to-indigo-600",
+          label: "Category",
+          labelColor: isDark ? "text-purple-400" : "text-purple-600"
+        };
+      case "offer":
+        return {
+          icon: <Briefcase className="w-5 h-5" />,
+          bgColor: "from-emerald-500 to-teal-600",
+          label: "Service Offer",
+          labelColor: isDark ? "text-emerald-400" : "text-emerald-600"
+        };
+      case "request":
+        return {
+          icon: <HandHelping className="w-5 h-5" />,
+          bgColor: "from-orange-500 to-amber-600",
+          label: "Looking For",
+          labelColor: isDark ? "text-orange-400" : "text-orange-600"
+        };
+      case "user":
+      default:
+        return {
+          icon: <User className="w-5 h-5" />,
+          bgColor: "from-[#5AC8FA] to-[#007AFF]",
+          label: "User",
+          labelColor: isDark ? "text-sky-400" : "text-sky-600"
+        };
+    }
+  };
+
+  // Render a single search result
+  const renderSearchResult = (result: SearchResult, isMobile = false) => {
+    const styles = getResultTypeStyles(result.type);
+    const sizeClasses = isMobile 
+      ? "w-10 h-10 text-sm" 
+      : "w-12 h-12 text-base";
+    const padding = isMobile ? "p-3" : "p-4";
+    const nameSize = isMobile ? "text-sm" : "text-base";
+    const descSize = isMobile ? "text-xs" : "text-sm";
+
+    return (
+      <button
+        key={`${result.type || 'user'}-${result.id}`}
+        onClick={() => handleResultClick(result as SearchResult)}
+        className={`w-full flex items-center gap-3 ${padding} ${isDark ? 'hover:bg-slate-700 border-slate-700' : 'hover:bg-gray-50 border-gray-100'} border-b transition-all text-left`}
+      >
+        <div className={`${sizeClasses} bg-gradient-to-br ${styles.bgColor} rounded-full flex items-center justify-center text-white font-black flex-shrink-0`}>
+          {styles.icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className={`font-black ${nameSize} truncate ${isDark ? 'text-gray-100' : 'text-[#3d3f56]'}`}>
+              {result.name}
+            </p>
+            {searchType === "services" && (
+              <span className={`${descSize} font-semibold ${styles.labelColor} px-2 py-0.5 rounded-full ${isDark ? 'bg-slate-700' : 'bg-gray-100'}`}>
+                {styles.label}
+              </span>
+            )}
+          </div>
+          {(!result.type || result.type === "user") && result.email && (
+            <p className={`${descSize} truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{result.email}</p>
+          )}
+          {result.type === "category" && (
+            <p className={`${descSize} truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Click to view services</p>
+          )}
+          {(result.type === "offer" || result.type === "request") && (
+            <p className={`${descSize} truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              {result.categoryName && <span className="font-semibold">{result.categoryName}</span>}
+              {result.userName && <span> • by {result.userName}</span>}
+            </p>
+          )}
+        </div>
+      </button>
+    );
+  };
+
   return (
     <nav className={`${isDark ? 'bg-slate-900 border-slate-800' : 'bg-white'} shadow-lg sticky top-0 z-50 border-b ${isDark ? 'border-slate-800' : 'border-gray-100'}`}>
-      <div className="px-6 lg:px-8 py-4 lg:py-6">
+      <div className="px-4 md:px-6 xl:px-8 py-4 md:py-5 xl:py-6">
         {/* Desktop Layout */}
-        <div className="hidden lg:flex flex-row items-center justify-between gap-8 w-full">
+        <div className="hidden xl:flex flex-row items-center justify-between gap-8 w-full">
           {/* LOGO */}
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="w-14 h-14 bg-gradient-to-b from-[#5AC8FA] to-[#007AFF] rounded-xl flex items-center justify-center text-white font-black text-3xl shadow-md transform -skew-x-6">
@@ -98,23 +199,23 @@ export default function DashboardHeader({
             </div>
 
             {/* ✅ Search Results Dropdown - Desktop */}
-            {searchType === "users" && showSearchResults && searchResults.length > 0 && (
-              <div className={`absolute top-full left-0 right-0 mt-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl shadow-xl border-2 z-50 max-h-80 overflow-y-auto`}>
-                {searchResults.map((result: SearchResult) => (
-                  <button
-                    key={`user-${result.id}`}
-                    onClick={() => handleNavigateToProfile(result.id)}
-                    className={`w-full flex items-center gap-3 p-4 ${isDark ? 'hover:bg-slate-700 border-slate-700' : 'hover:bg-gray-50 border-gray-100'} border-b transition-all text-left`}
-                  >
-                    <div className="w-12 h-12 bg-gradient-to-br from-[#5AC8FA] to-[#007AFF] rounded-full flex items-center justify-center text-white font-black flex-shrink-0 text-base">
-                      {result.name?.[0]?.toUpperCase() || "?"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-black text-base truncate ${isDark ? 'text-gray-100' : 'text-[#3d3f56]'}`}>{result.name}</p>
-                      <p className={`text-sm truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{result.email}</p>
-                    </div>
-                  </button>
-                ))}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className={`absolute top-full left-0 right-0 mt-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl shadow-xl border-2 z-50 max-h-96 overflow-y-auto`}>
+                {searchLoading ? (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className={`w-6 h-6 animate-spin ${isDark ? 'text-sky-400' : 'text-[#5AC8FA]'}`} />
+                    <span className={`ml-2 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Searching...</span>
+                  </div>
+                ) : (
+                  searchResults.map((result: SearchResult) => renderSearchResult(result, false))
+                )}
+              </div>
+            )}
+            {showSearchResults && searchResults.length === 0 && searchQuery.length > 0 && !searchLoading && (
+              <div className={`absolute top-full left-0 right-0 mt-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl shadow-xl border-2 z-50 p-6`}>
+                <p className={`text-center font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No results found for "{searchQuery}"
+                </p>
               </div>
             )}
           </div>
@@ -195,7 +296,7 @@ export default function DashboardHeader({
         </div>
 
         {/* Mobile Layout */}
-        <div className="lg:hidden">
+        <div className="xl:hidden">
           <div className="flex items-center justify-between mb-4">
             {/* LOGO */}
             <div className="flex items-center gap-3 flex-shrink-0">
@@ -231,23 +332,23 @@ export default function DashboardHeader({
             </div>
 
             {/* ✅ Search Results Dropdown - Mobile */}
-            {searchType === "users" && showSearchResults && searchResults.length > 0 && (
-              <div className={`absolute top-full left-0 right-0 mt-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl shadow-xl border-2 z-50 max-h-64 overflow-y-auto`}>
-                {searchResults.map((result: SearchResult) => (
-                  <button
-                    key={`user-${result.id}`}
-                    onClick={() => handleNavigateToProfile(result.id)}
-                    className={`w-full flex items-center gap-3 p-3 ${isDark ? 'hover:bg-slate-700 border-slate-700' : 'hover:bg-gray-50 border-gray-100'} border-b transition-all text-left`}
-                  >
-                    <div className="w-10 h-10 bg-gradient-to-br from-[#5AC8FA] to-[#007AFF] rounded-full flex items-center justify-center text-white font-black flex-shrink-0 text-sm">
-                      {result.name?.[0]?.toUpperCase() || "?"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`font-bold text-sm truncate ${isDark ? 'text-gray-100' : 'text-[#3d3f56]'}`}>{result.name}</p>
-                      <p className={`text-xs truncate ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{result.email}</p>
-                    </div>
-                  </button>
-                ))}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className={`absolute top-full left-0 right-0 mt-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl shadow-xl border-2 z-50 max-h-72 overflow-y-auto`}>
+                {searchLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className={`w-5 h-5 animate-spin ${isDark ? 'text-sky-400' : 'text-[#5AC8FA]'}`} />
+                    <span className={`ml-2 font-semibold text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Searching...</span>
+                  </div>
+                ) : (
+                  searchResults.map((result: SearchResult) => renderSearchResult(result, true))
+                )}
+              </div>
+            )}
+            {showSearchResults && searchResults.length === 0 && searchQuery.length > 0 && !searchLoading && (
+              <div className={`absolute top-full left-0 right-0 mt-2 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} rounded-2xl shadow-xl border-2 z-50 p-4`}>
+                <p className={`text-center font-semibold text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  No results found
+                </p>
               </div>
             )}
           </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Star, X } from "lucide-react";
 import { useDarkMode } from "@/app/context/DarkModeContext";
+import { useToast } from "./Toast";
 import api from "@/services/api";
 
 interface RatingModalProps {
@@ -23,6 +24,7 @@ export default function RatingModal({
   onSuccess,
 }: RatingModalProps) {
   const { isDark } = useDarkMode();
+  const { showToast } = useToast();
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,7 +122,7 @@ export default function RatingModal({
 
   const handleSubmitRating = async () => {
     if (rating === 0) {
-      alert("Please select a rating");
+      showToast("Please select a rating", "warning");
       return;
     }
 
@@ -131,13 +133,13 @@ export default function RatingModal({
         stars: rating,
       });
 
-      alert("Rating submitted successfully!");
+      showToast("Rating submitted successfully!", "success");
       setRating(0);
       onSuccess();
       onClose();
     } catch (err: any) {
       console.error("Error submitting rating:", err);
-      alert(err.response?.data?.message || "Failed to submit rating");
+      showToast(err.response?.data?.message || "Failed to submit rating", "error");
     } finally {
       setIsSubmitting(false);
     }

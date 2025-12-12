@@ -122,6 +122,12 @@ export default function LoginPage() {
       router.push("/dashboard");
       return;
     }
+    
+    // 🚫 Check if user was redirected due to ban
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("banned") === "true") {
+      setError("🚫 Your account has been suspended. Please contact support.");
+    }
   }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -135,8 +141,17 @@ export default function LoginPage() {
 
       // ✅ Store based on type
       if (response.data.type === "user") {
+        const userData = response.data.user;
+        
+        // 🚫 CHECK IF USER IS BANNED BEFORE ALLOWING LOGIN
+        if (userData.banned || userData.isBanned) {
+          console.warn("🚫 BANNED USER ATTEMPTED LOGIN");
+          setError("🚫 Your account has been suspended and cannot log in. Please contact support.");
+          return;
+        }
+        
         localStorage.setItem("userToken", response.data.token);
-        localStorage.setItem("user", JSON.stringify(response.data.user));
+        localStorage.setItem("user", JSON.stringify(userData));
         
         console.log("🟢 Email login - Setting user as ONLINE immediately");
         
@@ -172,25 +187,28 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "https://skill-link-production.up.railway.app/api/auth/google";
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+    window.location.href = `${apiUrl}/auth/google`;
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden py-4 ${
+    <div className={`min-h-screen w-full flex justify-center items-start md:items-center relative overflow-x-hidden py-8 sm:py-12 ${
       isDark 
         ? 'bg-gradient-to-br from-[#0f172a] via-[#111827] to-[#1e293b]'
         : 'bg-gradient-to-br from-[#EBF4FF] to-[#90CDF4]'
     }`}>
       
       {/* Background Elements */}
-      <div className={`absolute top-[-10%] right-[-5%] w-96 h-96 rounded-full opacity-20 blur-3xl ${
-        isDark ? 'bg-sky-500' : 'bg-[#7CA0D8]'
-      }`}></div>
-      <div className={`absolute bottom-[-10%] left-[-5%] w-96 h-96 rounded-full opacity-20 blur-3xl ${
-        isDark ? 'bg-indigo-600' : 'bg-[#5AC8FA]'
-      }`}></div>
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className={`absolute top-[-10%] right-[-5%] w-96 h-96 rounded-full opacity-20 blur-3xl ${
+          isDark ? 'bg-sky-500' : 'bg-[#7CA0D8]'
+        }`}></div>
+        <div className={`absolute bottom-[-10%] left-[-5%] w-96 h-96 rounded-full opacity-20 blur-3xl ${
+          isDark ? 'bg-indigo-600' : 'bg-[#5AC8FA]'
+        }`}></div>
+      </div>
 
-      <div className="relative w-full max-w-lg px-4 z-10">
+      <div className="relative w-full max-w-lg px-4 sm:px-6 z-10">
         
         {/* Logo Section - Side by Side */}
         <div className="flex items-center justify-center gap-2 mb-4">
@@ -204,14 +222,14 @@ export default function LoginPage() {
         </div>
 
         {/* Card Container */}
-        <div className={`rounded-[2rem] shadow-2xl border-2 px-8 py-6 relative ${
+        <div className={`rounded-[2rem] shadow-2xl border-2 px-6 sm:px-8 py-6 sm:py-8 relative ${
           isDark
             ? 'bg-slate-800 border-slate-700'
             : 'bg-white border-white/50'
         }`}>
           
           <div className="text-center mb-4">
-            <h1 className={`text-2xl font-black ${isDark ? 'text-white' : 'text-[#3d3f56]'}`}>Welcome Back</h1>
+            <h1 className={`text-2xl sm:text-3xl font-black ${isDark ? 'text-white' : 'text-[#3d3f56]'}`}>Welcome Back</h1>
             <p className={`font-bold text-sm mt-1 ${isDark ? 'text-slate-400' : 'text-[#7CA0D8]'}`}>Sign in to continue</p>
           </div>
 

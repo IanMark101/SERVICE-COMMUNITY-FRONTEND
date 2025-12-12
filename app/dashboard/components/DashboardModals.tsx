@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Lock, LogOut, Eye, EyeOff, X, Edit2 } from "lucide-react";
 import { useDarkMode } from "@/app/context/DarkModeContext";
 import api from "@/services/api";
+import { useToast } from "./Toast";
 
 interface DashboardModalsProps {
   showSettingsModal: boolean;
@@ -25,6 +26,7 @@ export default function DashboardModals({
   onLogout,
 }: DashboardModalsProps) {
   const { isDark } = useDarkMode();
+  const { showToast } = useToast();
   const [editForm, setEditForm] = useState({ name: "", email: "" });
   const [changePasswordForm, setChangePasswordForm] = useState({
     currentPassword: "",
@@ -40,7 +42,7 @@ export default function DashboardModals({
   // ============================================
   const handleEditProfile = async () => {
     if (!editForm.name || !editForm.email) {
-      alert("Please fill all fields");
+      showToast("Please fill all fields", "warning");
       return;
     }
 
@@ -52,7 +54,7 @@ export default function DashboardModals({
       const updatedUser = response.data.user || response.data;
       localStorage.setItem("user", JSON.stringify(updatedUser));
 
-      alert("✅ Profile updated successfully!");
+      showToast("Profile updated successfully!", "success");
       setShowEditProfileModal(false);
       setEditForm({ name: "", email: "" });
 
@@ -60,7 +62,7 @@ export default function DashboardModals({
       window.location.reload();
     } catch (err: any) {
       console.error("Edit profile error:", err);
-      alert(err.response?.data?.message || "Failed to update profile");
+      showToast(err.response?.data?.message || "Failed to update profile", "error");
     } finally {
       setEditLoading(false);
     }
@@ -77,17 +79,17 @@ export default function DashboardModals({
       !changePasswordForm.newPassword ||
       !changePasswordForm.confirmPassword
     ) {
-      alert("Please fill all fields");
+      showToast("Please fill all fields", "warning");
       return;
     }
 
     if (changePasswordForm.newPassword !== changePasswordForm.confirmPassword) {
-      alert("New passwords do not match");
+      showToast("New passwords do not match", "warning");
       return;
     }
 
-    if (changePasswordForm.newPassword.length < 6) {
-      alert("Password must be at least 6 characters");
+    if (changePasswordForm.newPassword.length < 8) {
+      showToast("Password must be at least 8 characters", "warning");
       return;
     }
 
@@ -98,7 +100,7 @@ export default function DashboardModals({
         password: changePasswordForm.newPassword,
       });
 
-      alert("✅ Password changed successfully!");
+      showToast("Password changed successfully!", "success");
       setChangePasswordForm({
         currentPassword: "",
         newPassword: "",
@@ -108,7 +110,7 @@ export default function DashboardModals({
       setShowPasswordFields(false);
     } catch (err: any) {
       console.error("Change password error:", err);
-      alert(err.response?.data?.message || "Failed to change password");
+      showToast(err.response?.data?.message || "Failed to change password", "error");
     } finally {
       setChangePasswordLoading(false);
     }
