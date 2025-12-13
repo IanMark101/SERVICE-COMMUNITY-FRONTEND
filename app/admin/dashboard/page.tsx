@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import React from "react";
 import { useRouter } from "next/navigation";
 import {
   Users,
@@ -29,6 +30,7 @@ import SuggestionsList from "./components/SuggestionsList";
 import AdminSettingsModal from "./components/AdminSettingsModal";
 
 export default function AdminDashboard() {
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "users" | "reports" | "categories" | "offers" | "requests" | "suggestions" | "settings"
@@ -284,10 +286,9 @@ export default function AdminDashboard() {
         <div className="absolute top-1/3 left-1/2 h-72 w-72 rounded-full bg-cyan-500/15 blur-3xl" />
       </div>
 
-      {/* Sidebar */}
-      <aside className={`relative bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/80 text-white flex-shrink-0 hidden md:flex flex-col shadow-2xl z-20 transition-all duration-300 ${
-        sidebarExpanded ? 'w-64' : 'w-20'
-      }`}>
+
+      {/* Desktop Sidebar */}
+      <aside className={`relative bg-slate-900/90 backdrop-blur-xl border-r border-slate-800/80 text-white flex-shrink-0 hidden md:flex flex-col shadow-2xl z-20 transition-all duration-300 ${sidebarExpanded ? 'w-64' : 'w-20'}`}>
         <button
           onClick={() => setSidebarExpanded(!sidebarExpanded)}
           className={`p-6 flex items-center gap-3 border-b border-slate-700/60 bg-gradient-to-r from-slate-900/80 to-slate-900/40 hover:bg-slate-800/60 transition-all duration-200 ${!sidebarExpanded && 'justify-center'}`}
@@ -301,77 +302,79 @@ export default function AdminDashboard() {
             </span>
           )}
         </button>
-
         <nav className={`flex-1 p-4 space-y-2 overflow-y-auto ${!sidebarExpanded && 'flex flex-col items-center'}`}>
-          <SidebarItem
-            icon={<LayoutDashboard size={20} />}
-            label={sidebarExpanded ? "Dashboard" : ""}
-            active={activeTab === "dashboard"}
-            onClick={() => {
-              setActiveTab("dashboard");
-            }}
-          />
-          <SidebarItem
-            icon={<Users size={20} />}
-            label={sidebarExpanded ? "Users" : ""}
-            active={activeTab === "users"}
-            onClick={() => {
-              setActiveTab("users");
-            }}
-          />
-          <SidebarItem
-            icon={<ShieldAlert size={20} />}
-            label={sidebarExpanded ? "Reports" : ""}
-            active={activeTab === "reports"}
-            onClick={() => {
-              setActiveTab("reports");
-            }}
-          />
-          <SidebarItem
-            icon={<Tag size={20} />}
-            label={sidebarExpanded ? "Service Categories" : ""}
-            active={activeTab === "categories"}
-            onClick={() => {
-              setActiveTab("categories");
-            }}
-          />
-          <SidebarItem
-            icon={<Lightbulb size={20} />}
-            label={sidebarExpanded ? `Suggestions${pendingSuggestions > 0 ? ` (${pendingSuggestions})` : ""}` : ""}
-            active={activeTab === "suggestions"}
-            onClick={() => {
-              setActiveTab("suggestions");
-            }}
-          />
-          <SidebarItem
-            icon={<Settings size={20} />}
-            label={sidebarExpanded ? "Settings" : ""}
-            active={activeTab === "settings"}
-            onClick={() => {
-              setActiveTab("settings");
-            }}
-          />
+          <SidebarItem icon={<LayoutDashboard size={20} />} label={sidebarExpanded ? "Dashboard" : ""} active={activeTab === "dashboard"} onClick={() => setActiveTab("dashboard")} />
+          <SidebarItem icon={<Users size={20} />} label={sidebarExpanded ? "Users" : ""} active={activeTab === "users"} onClick={() => setActiveTab("users")} />
+          <SidebarItem icon={<ShieldAlert size={20} />} label={sidebarExpanded ? "Reports" : ""} active={activeTab === "reports"} onClick={() => setActiveTab("reports")} />
+          <SidebarItem icon={<Tag size={20} />} label={sidebarExpanded ? "Service Categories" : ""} active={activeTab === "categories"} onClick={() => setActiveTab("categories")} />
+          <SidebarItem icon={<Lightbulb size={20} />} label={sidebarExpanded ? `Suggestions${pendingSuggestions > 0 ? ` (${pendingSuggestions})` : ""}` : ""} active={activeTab === "suggestions"} onClick={() => setActiveTab("suggestions")} />
+          <SidebarItem icon={<Settings size={20} />} label={sidebarExpanded ? "Settings" : ""} active={activeTab === "settings"} onClick={() => setActiveTab("settings")} />
         </nav>
-
         <div className={`p-4 border-t border-slate-700/60 bg-gradient-to-t from-slate-900/60 to-transparent ${!sidebarExpanded && 'flex justify-center'}`}>
-          <button
-            onClick={handleLogout}
-            className={`flex items-center gap-3 p-3 rounded-xl text-slate-300 hover:bg-rose-500/20 hover:text-rose-100 hover:border-rose-400/40 transition-all duration-200 border border-transparent ${sidebarExpanded ? 'w-full' : ''}`}
-          >
+          <button onClick={handleLogout} className={`flex items-center gap-3 p-3 rounded-xl text-slate-300 hover:bg-rose-500/20 hover:text-rose-100 hover:border-rose-400/40 transition-all duration-200 border border-transparent ${sidebarExpanded ? 'w-full' : ''}`}>
             <LogOut size={20} />
             {sidebarExpanded && <span className="font-semibold">Log Out</span>}
           </button>
         </div>
       </aside>
 
+      {/* Mobile Sidebar Drawer */}
+      {mobileSidebarOpen && (
+        <div className="fixed inset-0 z-40 flex md:hidden">
+          {/* Overlay */}
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
+          {/* Drawer */}
+          <aside className="relative w-64 bg-slate-900/95 backdrop-blur-xl border-r border-slate-800/80 text-white flex flex-col shadow-2xl z-50 animate-slide-in-left">
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-lg bg-slate-800/40"
+              aria-label="Close sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <div className="p-6 flex items-center gap-3 border-b border-slate-700/60 bg-gradient-to-r from-slate-900/80 to-slate-900/40">
+              <div className="w-11 h-11 bg-gradient-to-br from-sky-500 via-sky-400 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-600/50 border border-white/20 backdrop-blur-xl">
+                <LayoutDashboard className="w-6 h-6 text-white drop-shadow-lg" />
+              </div>
+              <span className="text-xl font-black tracking-tight">
+                Admin<span className="text-transparent bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text">Panel</span>
+              </span>
+            </div>
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+              <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === "dashboard"} onClick={() => { setActiveTab("dashboard"); setMobileSidebarOpen(false); }} />
+              <SidebarItem icon={<Users size={20} />} label="Users" active={activeTab === "users"} onClick={() => { setActiveTab("users"); setMobileSidebarOpen(false); }} />
+              <SidebarItem icon={<ShieldAlert size={20} />} label="Reports" active={activeTab === "reports"} onClick={() => { setActiveTab("reports"); setMobileSidebarOpen(false); }} />
+              <SidebarItem icon={<Tag size={20} />} label="Service Categories" active={activeTab === "categories"} onClick={() => { setActiveTab("categories"); setMobileSidebarOpen(false); }} />
+              <SidebarItem icon={<Lightbulb size={20} />} label={`Suggestions${pendingSuggestions > 0 ? ` (${pendingSuggestions})` : ""}`} active={activeTab === "suggestions"} onClick={() => { setActiveTab("suggestions"); setMobileSidebarOpen(false); }} />
+              <SidebarItem icon={<Settings size={20} />} label="Settings" active={activeTab === "settings"} onClick={() => { setActiveTab("settings"); setMobileSidebarOpen(false); }} />
+            </nav>
+            <div className="p-4 border-t border-slate-700/60 bg-gradient-to-t from-slate-900/60 to-transparent">
+              <button onClick={() => { handleLogout(); setMobileSidebarOpen(false); }} className="flex items-center gap-3 p-3 rounded-xl text-slate-300 hover:bg-rose-500/20 hover:text-rose-100 hover:border-rose-400/40 transition-all duration-200 border border-transparent w-full">
+                <LogOut size={20} />
+                <span className="font-semibold">Log Out</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
       {/* Main content */}
       <main className="relative flex-1 flex flex-col h-screen overflow-hidden z-10">
         {/* Header */}
-        <header className="h-16 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/70 flex items-center justify-between px-6 shadow-lg shadow-black/20 z-10">
+        <header className="h-16 bg-slate-900/80 backdrop-blur-xl border-b border-slate-800/70 flex items-center justify-between px-4 sm:px-6 shadow-lg shadow-black/20 z-10">
           <div className="flex items-center gap-4">
+            {/* Mobile sidebar toggle */}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="p-2 rounded-lg hover:bg-sky-500/20 text-sky-300 hover:text-sky-100 transition-all border border-slate-800 hover:border-sky-500/40 flex md:hidden"
+              title="Open sidebar"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            {/* Desktop sidebar toggle */}
             <button
               onClick={() => setSidebarExpanded(!sidebarExpanded)}
-              className="p-2 rounded-lg hover:bg-sky-500/20 text-sky-300 hover:text-sky-100 transition-all border border-slate-800 hover:border-sky-500/40 md:flex hidden"
+              className="p-2 rounded-lg hover:bg-sky-500/20 text-sky-300 hover:text-sky-100 transition-all border border-slate-800 hover:border-sky-500/40 hidden md:flex"
               title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
             >
               <svg className={`w-5 h-5 transition-transform duration-300 ${sidebarExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -386,9 +389,7 @@ export default function AdminDashboard() {
           <button
             onClick={fetchData}
             disabled={isLoading}
-            className={`p-2 rounded-full hover:bg-sky-500/20 text-sky-300 hover:text-sky-100 transition-all border border-slate-800 hover:border-sky-500/40 ${
-              isLoading ? "animate-spin" : ""
-            }`}
+            className={`p-2 rounded-full hover:bg-sky-500/20 text-sky-300 hover:text-sky-100 transition-all border border-slate-800 hover:border-sky-500/40 ${isLoading ? "animate-spin" : ""}`}
             title="Refresh Data"
           >
             <RefreshCw size={20} />
@@ -480,16 +481,16 @@ export default function AdminDashboard() {
                             </Pie>
                             <Tooltip 
                               contentStyle={{
-                                backgroundColor: "#0f172a",
+                                background: "linear-gradient(135deg, #f0fdf4 60%, #d1fae5 100%)",
                                 border: "3px solid #10b981",
                                 borderRadius: "16px",
-                                boxShadow: "0 25px 70px rgba(16, 185, 129, 0.3)",
-                                color: "#ffffff",
+                                boxShadow: "0 25px 70px rgba(16, 185, 129, 0.18)",
+                                color: "#134e4a",
                                 padding: "16px 20px",
                                 fontWeight: "700",
                                 fontSize: "14px"
                               }}
-                              labelStyle={{ color: "#10b981", fontWeight: "bold", fontSize: "15px" }}
+                              labelStyle={{ color: "#059669", fontWeight: "bold", fontSize: "15px" }}
                               formatter={(value: any) => [`${value} users`, "Count"]}
                             />
                           </PieChart>

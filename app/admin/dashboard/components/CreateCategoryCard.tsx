@@ -88,14 +88,14 @@ export default function CreateCategoryCard({
   };
 
   return (
-    <div className="space-y-8 text-slate-100">
+    <div className="space-y-8 text-slate-100 w-full max-w-4xl mx-auto px-2 sm:px-4 md:px-6">
       {/* CREATE FORM */}
-      <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70 hover:shadow-emerald-500/10 transition-all duration-300">
-        <div className="flex items-center gap-3 mb-8">
+      <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-4 sm:p-6 md:p-8 border border-slate-800/70 hover:shadow-emerald-500/10 transition-all duration-300">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-8">
           <div className="w-2 h-10 bg-gradient-to-b from-emerald-400 to-emerald-600 rounded-full shadow-lg shadow-emerald-500/40"></div>
           <div>
-            <h2 className="font-bold text-slate-50 text-3xl">Create Service Category</h2>
-            <p className="text-slate-400 text-base mt-1">Add new service types for your platform</p>
+            <h2 className="font-bold text-slate-50 text-2xl sm:text-3xl">Create Service Category</h2>
+            <p className="text-slate-400 text-sm sm:text-base mt-1">Add new service types for your platform</p>
           </div>
         </div>
 
@@ -132,19 +132,19 @@ export default function CreateCategoryCard({
 
         <div className="space-y-4">
           <label className="block text-base font-bold text-slate-200 uppercase tracking-wider">Category Name</label>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3 w-full">
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyPress={(e) => e.key === "Enter" && create()}
               placeholder="e.g. Electronics, Plumbing, Tutoring..."
-              className="flex-1 px-4 py-3 bg-slate-900/70 border border-slate-700 rounded-xl text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 focus:border-emerald-400 transition-all shadow-sm hover:border-slate-600"
+              className="flex-1 px-4 py-3 bg-slate-900/70 border border-slate-700 rounded-xl text-base sm:text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 focus:border-emerald-400 transition-all shadow-sm hover:border-slate-600 min-w-0"
             />
             <button
               onClick={create}
               disabled={loading || !name.trim()}
-              className="bg-gradient-to-r from-emerald-500 via-emerald-500 to-emerald-600 hover:from-emerald-400 hover:via-emerald-400 hover:to-emerald-500 text-white px-6 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/40 hover:shadow-emerald-500/60 border border-white/20 hover:border-white/30"
+              className="bg-gradient-to-r from-emerald-500 via-emerald-500 to-emerald-600 hover:from-emerald-400 hover:via-emerald-400 hover:to-emerald-500 text-white px-4 sm:px-6 py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 font-bold text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/40 hover:shadow-emerald-500/60 border border-white/20 hover:border-white/30 w-full sm:w-auto"
             >
               <Plus size={22} />
               <span className="hidden sm:inline">Add Category</span>
@@ -154,12 +154,12 @@ export default function CreateCategoryCard({
       </div>
 
       {/* CATEGORIES LIST */}
-      <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-8 border border-slate-800/70 hover:shadow-sky-500/10 transition-all duration-300">
-        <div className="flex items-center gap-3 mb-8">
+      <div className="bg-slate-900/70 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/40 p-4 sm:p-6 md:p-8 border border-slate-800/70 hover:shadow-sky-500/10 transition-all duration-300">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-8">
           <div className="w-2 h-10 bg-gradient-to-b from-sky-500 to-indigo-600 rounded-full shadow-lg shadow-sky-500/40"></div>
           <div>
-            <h2 className="font-bold text-slate-50 text-3xl">Service Categories</h2>
-            <p className="text-slate-400 text-base mt-1">{categories.length} total categories</p>
+            <h2 className="font-bold text-slate-50 text-2xl sm:text-3xl">Service Categories</h2>
+            <p className="text-slate-400 text-sm sm:text-base mt-1">{categories.length} total categories</p>
           </div>
         </div>
 
@@ -179,12 +179,12 @@ export default function CreateCategoryCard({
               scrollbarColor: '#10b981 #1e293b'
             }}
           >
-            <table className="w-full text-sm">
+            <table className="w-full text-xs sm:text-sm">
               <thead>
                 <tr className="border-b-2 border-slate-800/80 bg-slate-800/30">
-                  <th className="px-6 py-4 text-left font-bold text-slate-200 uppercase text-sm tracking-wider">ID</th>
-                  <th className="px-6 py-4 text-left font-bold text-slate-200 uppercase text-sm tracking-wider">Category Name</th>
-                  <th className="px-6 py-4 text-right font-bold text-slate-200 uppercase text-sm tracking-wider">Actions</th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-4 text-left font-bold text-slate-200 uppercase text-xs sm:text-sm tracking-wider">ID</th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-4 text-left font-bold text-slate-200 uppercase text-xs sm:text-sm tracking-wider">Category Name</th>
+                  <th className="px-2 sm:px-6 py-2 sm:py-4 text-right font-bold text-slate-200 uppercase text-xs sm:text-sm tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,27 +193,27 @@ export default function CreateCategoryCard({
                     key={cat.id} 
                     className="border-b border-slate-800/50 hover:bg-slate-800/60 transition-all duration-200 group"
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-2 sm:px-6 py-2 sm:py-4">
                       <span className="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-sky-500/40 to-indigo-500/40 text-sky-200 rounded-lg text-base font-bold border border-sky-500/50 shadow-lg shadow-sky-500/20">
                         {index + 1}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-2 sm:px-6 py-2 sm:py-4">
                       {editingId === cat.id ? (
                         <input
                           type="text"
                           autoFocus
-                          className="w-full px-4 py-2 bg-slate-900/70 border-2 border-sky-500/60 rounded-xl text-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all font-semibold"
+                          className="w-full px-4 py-2 bg-slate-900/70 border-2 border-sky-500/60 rounded-xl text-base sm:text-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500/50 transition-all font-semibold"
                           value={editingName}
                           onChange={(e) => setEditingName(e.target.value)}
                           onKeyPress={(e) => e.key === "Enter" && update(cat.id)}
                         />
                       ) : (
-                        <span className="font-semibold text-slate-100 text-lg group-hover:text-slate-50 transition-colors">{cat.name}</span>
+                        <span className="font-semibold text-slate-100 text-base sm:text-lg group-hover:text-slate-50 transition-colors">{cat.name}</span>
                       )}
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2 justify-end">
+                    <td className="px-2 sm:px-6 py-2 sm:py-4">
+                      <div className="flex gap-2 justify-end flex-wrap">
                         {editingId === cat.id ? (
                           <>
                             <button 

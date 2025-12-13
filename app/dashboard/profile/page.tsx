@@ -459,55 +459,48 @@ export default function ProfilePage() {
               {activeTab === "offers" && (
                 <div className="space-y-6 lg:space-y-8">
                   {offersLoading ? (
-                    <p className="text-center text-gray-500 text-base lg:text-xl">Loading...</p>
+
+                    <p className={`text-center text-base lg:text-xl ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Loading...</p>
                   ) : myOffers.length > 0 ? (
                     <>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
                         {myOffers.map((offer) => (
                           <div
                             key={offer.id}
-                            className="bg-gradient-to-br from-[#f5f7fc] via-[#f0f2f7] to-[#eef1f6] rounded-2xl p-6 lg:p-8 border-2 border-[#d4dae8]"
+                            className={`rounded-2xl p-6 lg:p-8 border-2 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-[#f5f7fc] via-[#f0f2f7] to-[#eef1f6] border-[#d4dae8]'}`}
                           >
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4 lg:mb-6">
                               <div className="flex-1 min-w-0">
-                                <h3 className="text-2xl lg:text-3xl font-black text-[#3d3f56] mb-2 break-words">
-                                  {offer.title}
-                                </h3>
-                                <p className="text-sm lg:text-base text-gray-600 font-black">
-                                  {offer.category?.name}
-                                </p>
+                                <h3 className={`text-2xl lg:text-3xl font-black mb-2 break-words ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>{offer.title}</h3>
+                                <p className={`text-sm lg:text-base font-black ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{offer.category?.name}</p>
                               </div>
                               <span
                                 className={`px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-black flex-shrink-0 ${
                                   offer.active
-                                    ? "bg-green-200 text-green-800"
-                                    : "bg-gray-200 text-gray-800"
+                                    ? isDark ? 'bg-green-900 text-green-200' : 'bg-green-200 text-green-800'
+                                    : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-800'
                                 }`}
                               >
                                 {offer.active ? "Active" : "Inactive"}
                               </span>
                             </div>
-                            <p className="text-base lg:text-lg text-gray-700 font-semibold mb-4 lg:mb-6 break-words">
-                              {offer.description}
-                            </p>
+                            <p className={`text-base lg:text-lg font-semibold mb-4 lg:mb-6 break-words ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{offer.description}</p>
                             <div className="flex items-center justify-between gap-4 mb-4">
                               <div className="flex items-center gap-2">
                                 <Star className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-400 fill-yellow-400" />
-                                <span className="font-black text-base lg:text-lg text-[#3d3f56]">
-                                  {offer.avgRating || "N/A"}
-                                </span>
+                                <span className={`font-black text-base lg:text-lg ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>{offer.avgRating || "N/A"}</span>
                               </div>
                             </div>
                             <div className="flex gap-2 lg:gap-3">
                               <button
                                 onClick={() => handleEditOffer(offer)}
-                                className="flex-1 bg-[#1CC4B6] hover:bg-[#19b0a3] text-white font-black py-2 lg:py-3 px-4 rounded-full text-sm lg:text-base transition-all"
+                                className={`flex-1 text-white font-black py-2 lg:py-3 px-4 rounded-full text-sm lg:text-base transition-all ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteOffer(offer.id)}
-                                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-black py-2 lg:py-3 px-4 rounded-full text-sm lg:text-base transition-all"
+                                className={`flex-1 text-white font-black py-2 lg:py-3 px-4 rounded-full text-sm lg:text-base transition-all ${isDark ? 'bg-red-700 hover:bg-red-800' : 'bg-red-500 hover:bg-red-600'}`}
                               >
                                 Delete
                               </button>
@@ -548,47 +541,42 @@ export default function ProfilePage() {
               {activeTab === "requests" && (
                 <div className="space-y-6 lg:space-y-8">
                   {requestsLoading ? (
-                    <p className="text-center text-gray-500 text-base lg:text-xl">Loading...</p>
+
+                    <p className={`text-center text-base lg:text-xl ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Loading...</p>
                   ) : myRequests.length > 0 ? (
                     <>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8">
                         {myRequests.map((request) => (
                           <div
                             key={request.id}
-                            className="bg-gradient-to-br from-[#f5f3f9] via-[#f0eef5] to-[#ede9f2] rounded-2xl p-6 lg:p-8 border-2 border-[#dcd3e8]"
+                            className={`rounded-2xl p-6 lg:p-8 border-2 ${isDark ? 'bg-slate-800 border-slate-700 text-slate-100' : 'bg-gradient-to-br from-[#f5f3f9] via-[#f0eef5] to-[#ede9f2] border-[#dcd3e8]'}`}
                           >
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4 lg:mb-6">
                               <div className="flex-1 min-w-0">
-                                <h3 className="text-2xl lg:text-3xl font-black text-[#3d3f56] mb-2 break-words">
-                                  {request.description.slice(0, 30)}...
-                                </h3>
-                                <p className="text-sm lg:text-base text-gray-600 font-black">
-                                  {request.category?.name}
-                                </p>
+                                <h3 className={`text-2xl lg:text-3xl font-black mb-2 break-words ${isDark ? 'text-slate-100' : 'text-[#3d3f56]'}`}>{request.description.slice(0, 30)}...</h3>
+                                <p className={`text-sm lg:text-base font-black ${isDark ? 'text-slate-400' : 'text-gray-600'}`}>{request.category?.name}</p>
                               </div>
                               <span
                                 className={`px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-black flex-shrink-0 ${
                                   request.active
-                                    ? "bg-green-200 text-green-800"
-                                    : "bg-gray-200 text-gray-800"
+                                    ? isDark ? 'bg-green-900 text-green-200' : 'bg-green-200 text-green-800'
+                                    : isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-800'
                                 }`}
                               >
                                 {request.active ? "Active" : "Closed"}
                               </span>
                             </div>
-                            <p className="text-base lg:text-lg text-gray-700 font-semibold mb-4 lg:mb-6 break-words">
-                              {request.description}
-                            </p>
+                            <p className={`text-base lg:text-lg font-semibold mb-4 lg:mb-6 break-words ${isDark ? 'text-slate-300' : 'text-gray-700'}`}>{request.description}</p>
                             <div className="flex gap-2 lg:gap-3">
                               <button
                                 onClick={() => handleEditRequest(request)}
-                                className="flex-1 bg-[#1CC4B6] hover:bg-[#19b0a3] text-white font-black py-2 lg:py-3 px-4 rounded-full text-sm lg:text-base transition-all"
+                                className={`flex-1 text-white font-black py-2 lg:py-3 px-4 rounded-full text-sm lg:text-base transition-all ${isDark ? 'bg-teal-600 hover:bg-teal-700' : 'bg-[#1CC4B6] hover:bg-[#19b0a3]'}`}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteRequest(request.id)}
-                                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-black py-2 lg:py-3 px-4 rounded-full text-sm lg:text-base transition-all"
+                                className={`flex-1 text-white font-black py-2 lg:py-3 px-4 rounded-full text-sm lg:text-base transition-all ${isDark ? 'bg-red-700 hover:bg-red-800' : 'bg-red-500 hover:bg-red-600'}`}
                               >
                                 Delete
                               </button>
